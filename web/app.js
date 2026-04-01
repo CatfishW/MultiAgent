@@ -1,4 +1,5 @@
 const DATA_URL = "data/session_summary.json";
+const AUTO_REFRESH_MS = 15000;
 
 const overviewGrid = document.getElementById("overviewGrid");
 const rankGrid = document.getElementById("rankGrid");
@@ -9,6 +10,8 @@ const refreshButton = document.getElementById("refreshButton");
 const snapshotTime = document.getElementById("snapshotTime");
 
 let activeSessionKey = null;
+let refreshTimer = null;
+let loading = false;
 
 function fmtNumber(value, digits = 3) {
   if (value === null || value === undefined || Number.isNaN(Number(value))) {
@@ -101,6 +104,10 @@ function progressLabel(progress) {
     return "-";
   }
   return `${progress.completed}/${progress.total} (${progress.pct_text || "-"})`;
+}
+
+function snapshotLabel(generatedAt) {
+  return `snapshot: ${generatedAt || "unknown"} • auto-refresh ${Math.round(AUTO_REFRESH_MS / 1000)}s`;
 }
 
 function renderSessionDetail(session) {
@@ -198,6 +205,11 @@ function renderSessions(sessions) {
 }
 
 async function loadData() {
+  if (loading) {
+    return;
+  }
+  loading = true;
+  refreshButton.disabled = true;
   try {
     const response = await fetch(`${DATA_URL}?t=${Date.now()}`);
     if (!response.ok) {
@@ -208,7 +220,7 @@ async function loadData() {
     renderLeaderboard(data.overview?.architecture_leaderboard || []);
     renderDatasetCards(data.dataset_cards || []);
     renderSessions(data.sessions || []);
-    snapshotTime.textContent = `snapshot: ${data.overview?.generated_at || "unknown"}`;
+    snapshotTime.textContent = snapshotLabel(data.overview?.generated_at);
   } catch (error) {
     overviewGrid.innerHTML = `<article class="stat-tile"><p class="stat-label">Error</p><p class="stat-value">!</p></article>`;
     rankGrid.innerHTML = "";
@@ -216,8 +228,31 @@ async function loadData() {
     sessionsBody.innerHTML = "";
     sessionDetail.innerHTML = `<p class="detail-empty">${esc(String(error))}</p>`;
     snapshotTime.textContent = "snapshot: failed";
+  } finally {
+    refreshButton.disabled = false;
+    loading = false;
   }
 }
 
+function startAutoRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer);
+  }
+  refreshTimer = setInterval(() => {
+    if (document.visibilityState === "visible") {
+      loadData();
+    }
+  }, AUTO_REFRESH_MS);
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    loadData();
+  }
+});
+
+window.addEventListener("focus", loadData);
+
 refreshButton.addEventListener("click", loadData);
 loadData();
+startAutoRefresh();

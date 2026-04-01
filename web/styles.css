@@ -74,6 +74,8 @@ h1 {
   font-size: 0.82rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  color: #3f372c;
 }
 
 .sketch-btn {

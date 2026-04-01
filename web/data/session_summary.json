@@ -4,7 +4,7 @@
     "finished_sessions": 0,
     "running_sessions": 8,
     "failed_sessions": 0,
-    "generated_at": "2026-04-01 19:20:25",
+    "generated_at": "2026-04-01 19:41:43",
     "architecture_leaderboard": []
   },
   "dataset_cards": [
@@ -44,7 +44,7 @@
       "architecture": "classical_rag",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:20:16",
+      "ended_at": "2026-04-01 19:32:40",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -69,10 +69,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 30,
         "total": 16956,
-        "pct_text": "0.1%",
-        "line": "[2026-04-01 19:20:16] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6706, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3328, latency_ms=44130.8000"
+        "pct_text": "0.2%",
+        "line": "[2026-04-01 19:32:40] Progress 30/16956 (0.2%) latest=dc7ead4079de34377387734a61fecf44d16ca677ed3b6640b5cac1bd86489be8 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7607, edu_json_compliance=0.0000, edu_score_alignment=0.0333, grounded_overlap=0.3129, latency_ms=39494.1667"
       },
       "metric_digest": null,
       "log_tail": [
@@ -84,7 +84,9 @@
         "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=classical_rag, limit=None, examples=16956",
         "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
         "[2026-04-01 19:12:56] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3081, latency_ms=690.0000",
-        "[2026-04-01 19:20:16] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6706, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3328, latency_ms=44130.8000"
+        "[2026-04-01 19:20:16] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6706, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3328, latency_ms=44130.8000",
+        "[2026-04-01 19:27:28] Progress 20/16956 (0.1%) latest=7eb4db494257654ce47881e5f42854969d994a50b4b360e4b97d791da4414432 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7102, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3113, latency_ms=43638.3500",
+        "[2026-04-01 19:32:40] Progress 30/16956 (0.2%) latest=dc7ead4079de34377387734a61fecf44d16ca677ed3b6640b5cac1bd86489be8 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7607, edu_json_compliance=0.0000, edu_score_alignment=0.0333, grounded_overlap=0.3129, latency_ms=39494.1667"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -94,7 +96,7 @@
         "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=classical_rag, limit=None, examples=16956",
         "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
       ],
-      "log_line_count": 9,
+      "log_line_count": 11,
       "log_errors": []
     },
     {
@@ -103,7 +105,7 @@
       "architecture": "hybrid_fast",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:18:22",
+      "ended_at": "2026-04-01 19:37:07",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -128,10 +130,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 40,
         "total": 16956,
-        "pct_text": "0.1%",
-        "line": "[2026-04-01 19:18:22] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7856, edu_json_compliance=0.0000, edu_score_alignment=0.2321, grounded_overlap=0.0000, latency_ms=32639.4000"
+        "pct_text": "0.2%",
+        "line": "[2026-04-01 19:37:07] Progress 40/16956 (0.2%) latest=dd9b017647f1726a33f6c9036e4e651ab0cb7ca8fdfa62f2ad6df21208208ab5 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.8713, edu_json_compliance=0.0000, edu_score_alignment=0.0580, grounded_overlap=0.0000, latency_ms=36286.7250"
       },
       "metric_digest": null,
       "log_tail": [
@@ -143,7 +145,10 @@
         "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=hybrid_fast, limit=None, examples=16956",
         "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
         "[2026-04-01 19:12:55] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7778, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
-        "[2026-04-01 19:18:22] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7856, edu_json_compliance=0.0000, edu_score_alignment=0.2321, grounded_overlap=0.0000, latency_ms=32639.4000"
+        "[2026-04-01 19:18:22] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7856, edu_json_compliance=0.0000, edu_score_alignment=0.2321, grounded_overlap=0.0000, latency_ms=32639.4000",
+        "[2026-04-01 19:25:10] Progress 20/16956 (0.1%) latest=7eb4db494257654ce47881e5f42854969d994a50b4b360e4b97d791da4414432 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.8731, edu_json_compliance=0.0000, edu_score_alignment=0.1160, grounded_overlap=0.0000, latency_ms=36758.1500",
+        "[2026-04-01 19:29:53] Progress 30/16956 (0.2%) latest=dc7ead4079de34377387734a61fecf44d16ca677ed3b6640b5cac1bd86489be8 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.8829, edu_json_compliance=0.0000, edu_score_alignment=0.0774, grounded_overlap=0.0000, latency_ms=33941.5000",
+        "[2026-04-01 19:37:07] Progress 40/16956 (0.2%) latest=dd9b017647f1726a33f6c9036e4e651ab0cb7ca8fdfa62f2ad6df21208208ab5 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.8713, edu_json_compliance=0.0000, edu_score_alignment=0.0580, grounded_overlap=0.0000, latency_ms=36286.7250"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -153,7 +158,7 @@
         "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=hybrid_fast, limit=None, examples=16956",
         "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
       ],
-      "log_line_count": 9,
+      "log_line_count": 12,
       "log_errors": []
     },
     {
@@ -162,7 +167,7 @@
       "architecture": "non_rag_multi_agent",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:18:12",
+      "ended_at": "2026-04-01 19:37:29",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -187,10 +192,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 40,
         "total": 16956,
-        "pct_text": "0.1%",
-        "line": "[2026-04-01 19:18:12] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9148, edu_json_compliance=0.0000, edu_score_alignment=0.2883, grounded_overlap=0.0000, latency_ms=31769.9000"
+        "pct_text": "0.2%",
+        "line": "[2026-04-01 19:37:29] Progress 40/16956 (0.2%) latest=dd9b017647f1726a33f6c9036e4e651ab0cb7ca8fdfa62f2ad6df21208208ab5 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9030, edu_json_compliance=0.0000, edu_score_alignment=0.1471, grounded_overlap=0.0000, latency_ms=36872.1500"
       },
       "metric_digest": null,
       "log_tail": [
@@ -201,7 +206,10 @@
         "[2026-04-01 19:12:54] Running evaluation: dataset=EduBench, split=test, architecture=non_rag_multi_agent, limit=None, examples=16956",
         "[2026-04-01 19:12:54] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
         "[2026-04-01 19:12:54] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7778, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
-        "[2026-04-01 19:18:12] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9148, edu_json_compliance=0.0000, edu_score_alignment=0.2883, grounded_overlap=0.0000, latency_ms=31769.9000"
+        "[2026-04-01 19:18:12] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9148, edu_json_compliance=0.0000, edu_score_alignment=0.2883, grounded_overlap=0.0000, latency_ms=31769.9000",
+        "[2026-04-01 19:25:06] Progress 20/16956 (0.1%) latest=7eb4db494257654ce47881e5f42854969d994a50b4b360e4b97d791da4414432 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9006, edu_json_compliance=0.0000, edu_score_alignment=0.1441, grounded_overlap=0.0000, latency_ms=36562.8500",
+        "[2026-04-01 19:29:45] Progress 30/16956 (0.2%) latest=dc7ead4079de34377387734a61fecf44d16ca677ed3b6640b5cac1bd86489be8 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9116, edu_json_compliance=0.0000, edu_score_alignment=0.1628, grounded_overlap=0.0000, latency_ms=33692.2667",
+        "[2026-04-01 19:37:29] Progress 40/16956 (0.2%) latest=dd9b017647f1726a33f6c9036e4e651ab0cb7ca8fdfa62f2ad6df21208208ab5 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9030, edu_json_compliance=0.0000, edu_score_alignment=0.1471, grounded_overlap=0.0000, latency_ms=36872.1500"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -210,7 +218,7 @@
         "[2026-04-01 19:12:54] Running evaluation: dataset=EduBench, split=test, architecture=non_rag_multi_agent, limit=None, examples=16956",
         "[2026-04-01 19:12:54] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
       ],
-      "log_line_count": 8,
+      "log_line_count": 11,
       "log_errors": []
     },
     {
@@ -219,7 +227,7 @@
       "architecture": "single_agent_no_rag",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:18:32",
+      "ended_at": "2026-04-01 19:40:20",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -244,10 +252,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 40,
         "total": 16956,
-        "pct_text": "0.1%",
-        "line": "[2026-04-01 19:18:32] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7838, edu_json_compliance=0.0000, edu_score_alignment=0.0894, grounded_overlap=0.0000, latency_ms=33763.7000"
+        "pct_text": "0.2%",
+        "line": "[2026-04-01 19:40:20] Progress 40/16956 (0.2%) latest=dd9b017647f1726a33f6c9036e4e651ab0cb7ca8fdfa62f2ad6df21208208ab5 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7475, edu_json_compliance=0.0167, edu_score_alignment=0.1016, grounded_overlap=0.0000, latency_ms=41128.0500"
       },
       "metric_digest": null,
       "log_tail": [
@@ -258,7 +266,10 @@
         "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=single_agent_no_rag, limit=None, examples=16956",
         "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
         "[2026-04-01 19:12:55] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
-        "[2026-04-01 19:18:32] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7838, edu_json_compliance=0.0000, edu_score_alignment=0.0894, grounded_overlap=0.0000, latency_ms=33763.7000"
+        "[2026-04-01 19:18:32] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7838, edu_json_compliance=0.0000, edu_score_alignment=0.0894, grounded_overlap=0.0000, latency_ms=33763.7000",
+        "[2026-04-01 19:26:06] Progress 20/16956 (0.1%) latest=7eb4db494257654ce47881e5f42854969d994a50b4b360e4b97d791da4414432 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7558, edu_json_compliance=0.0000, edu_score_alignment=0.1280, grounded_overlap=0.0000, latency_ms=39546.7000",
+        "[2026-04-01 19:31:08] Progress 30/16956 (0.2%) latest=dc7ead4079de34377387734a61fecf44d16ca677ed3b6640b5cac1bd86489be8 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7645, edu_json_compliance=0.0000, edu_score_alignment=0.1355, grounded_overlap=0.0000, latency_ms=36439.0000",
+        "[2026-04-01 19:40:20] Progress 40/16956 (0.2%) latest=dd9b017647f1726a33f6c9036e4e651ab0cb7ca8fdfa62f2ad6df21208208ab5 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7475, edu_json_compliance=0.0167, edu_score_alignment=0.1016, grounded_overlap=0.0000, latency_ms=41128.0500"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -267,7 +278,7 @@
         "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=single_agent_no_rag, limit=None, examples=16956",
         "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
       ],
-      "log_line_count": 8,
+      "log_line_count": 11,
       "log_errors": []
     },
     {
@@ -276,7 +287,7 @@
       "architecture": "classical_rag",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:19:29",
+      "ended_at": "2026-04-01 19:36:28",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -301,10 +312,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 30,
         "total": 834,
-        "pct_text": "1.2%",
-        "line": "[2026-04-01 19:19:29] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0751, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2674, latency_ms=39729.8000"
+        "pct_text": "3.6%",
+        "line": "[2026-04-01 19:36:28] Progress 30/834 (3.6%) latest=64af82458c600fc6dc178b0b5764b8303effce8f1e031f2298e2bdac371c7e04 | token_f1=0.0622, exact_match=0.0000, rubric_coverage=0.9333, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2668, latency_ms=47197.3000"
       },
       "metric_digest": null,
       "log_tail": [
@@ -316,7 +327,9 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=classical_rag, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
         "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0384, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2263, latency_ms=198.0000",
-        "[2026-04-01 19:19:29] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0751, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2674, latency_ms=39729.8000"
+        "[2026-04-01 19:19:29] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0751, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2674, latency_ms=39729.8000",
+        "[2026-04-01 19:27:38] Progress 20/834 (2.4%) latest=7e93d7201287714ea11951301c5994ee44b9e3ac30becd9c26e16498e305926e | token_f1=0.0684, exact_match=0.0000, rubric_coverage=0.9750, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2638, latency_ms=44319.3000",
+        "[2026-04-01 19:36:28] Progress 30/834 (3.6%) latest=64af82458c600fc6dc178b0b5764b8303effce8f1e031f2298e2bdac371c7e04 | token_f1=0.0622, exact_match=0.0000, rubric_coverage=0.9333, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2668, latency_ms=47197.3000"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -326,7 +339,7 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=classical_rag, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
       ],
-      "log_line_count": 9,
+      "log_line_count": 11,
       "log_errors": []
     },
     {
@@ -335,7 +348,7 @@
       "architecture": "hybrid_fast",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:17:20",
+      "ended_at": "2026-04-01 19:37:01",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -360,10 +373,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 40,
         "total": 834,
-        "pct_text": "1.2%",
-        "line": "[2026-04-01 19:17:20] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0823, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3154, latency_ms=26871.8000"
+        "pct_text": "4.8%",
+        "line": "[2026-04-01 19:37:01] Progress 40/834 (4.8%) latest=3fa858243d01a66868fe5cca81473075ccf286181be37d853868bf20314e9117 | token_f1=0.0572, exact_match=0.0000, rubric_coverage=0.9875, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3015, latency_ms=36228.0750"
       },
       "metric_digest": null,
       "log_tail": [
@@ -375,7 +388,10 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=hybrid_fast, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
         "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0620, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2909, latency_ms=475.0000",
-        "[2026-04-01 19:17:20] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0823, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3154, latency_ms=26871.8000"
+        "[2026-04-01 19:17:20] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0823, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3154, latency_ms=26871.8000",
+        "[2026-04-01 19:24:16] Progress 20/834 (2.4%) latest=7e93d7201287714ea11951301c5994ee44b9e3ac30becd9c26e16498e305926e | token_f1=0.0714, exact_match=0.0000, rubric_coverage=0.9750, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3001, latency_ms=34244.2000",
+        "[2026-04-01 19:30:41] Progress 30/834 (3.6%) latest=64af82458c600fc6dc178b0b5764b8303effce8f1e031f2298e2bdac371c7e04 | token_f1=0.0642, exact_match=0.0000, rubric_coverage=0.9833, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2883, latency_ms=35655.4333",
+        "[2026-04-01 19:37:01] Progress 40/834 (4.8%) latest=3fa858243d01a66868fe5cca81473075ccf286181be37d853868bf20314e9117 | token_f1=0.0572, exact_match=0.0000, rubric_coverage=0.9875, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3015, latency_ms=36228.0750"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -385,7 +401,7 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=hybrid_fast, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
       ],
-      "log_line_count": 9,
+      "log_line_count": 12,
       "log_errors": []
     },
     {
@@ -394,7 +410,7 @@
       "architecture": "non_rag_multi_agent",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:16:11",
+      "ended_at": "2026-04-01 19:41:33",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -419,10 +435,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 50,
         "total": 834,
-        "pct_text": "1.2%",
-        "line": "[2026-04-01 19:16:11] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0651, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=19988.2000"
+        "pct_text": "6.0%",
+        "line": "[2026-04-01 19:41:33] Progress 50/834 (6.0%) latest=117eb6002945c894e8226da784b643c0c78b4faae4177920e2f666028cffb09a | token_f1=0.0461, exact_match=0.0000, rubric_coverage=0.9833, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=34417.4400"
       },
       "metric_digest": null,
       "log_tail": [
@@ -433,7 +449,11 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=non_rag_multi_agent, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
         "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0413, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
-        "[2026-04-01 19:16:11] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0651, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=19988.2000"
+        "[2026-04-01 19:16:11] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0651, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=19988.2000",
+        "[2026-04-01 19:23:05] Progress 20/834 (2.4%) latest=7e93d7201287714ea11951301c5994ee44b9e3ac30becd9c26e16498e305926e | token_f1=0.0557, exact_match=0.0000, rubric_coverage=0.9833, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=30645.6500",
+        "[2026-04-01 19:30:24] Progress 30/834 (3.6%) latest=64af82458c600fc6dc178b0b5764b8303effce8f1e031f2298e2bdac371c7e04 | token_f1=0.0533, exact_match=0.0000, rubric_coverage=0.9722, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=35071.7333",
+        "[2026-04-01 19:36:14] Progress 40/834 (4.8%) latest=3fa858243d01a66868fe5cca81473075ccf286181be37d853868bf20314e9117 | token_f1=0.0476, exact_match=0.0000, rubric_coverage=0.9792, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=35066.6750",
+        "[2026-04-01 19:41:33] Progress 50/834 (6.0%) latest=117eb6002945c894e8226da784b643c0c78b4faae4177920e2f666028cffb09a | token_f1=0.0461, exact_match=0.0000, rubric_coverage=0.9833, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=34417.4400"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -442,7 +462,7 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=non_rag_multi_agent, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
       ],
-      "log_line_count": 8,
+      "log_line_count": 12,
       "log_errors": []
     },
     {
@@ -451,7 +471,7 @@
       "architecture": "single_agent_no_rag",
       "status": "running",
       "started_at": "2026-04-01 19:12:51",
-      "ended_at": "2026-04-01 19:19:56",
+      "ended_at": "2026-04-01 19:37:46",
       "records": 0,
       "summary": {},
       "metric_tiles": {},
@@ -476,10 +496,10 @@
       },
       "result_fresh": false,
       "progress": {
-        "completed": 10,
+        "completed": 30,
         "total": 834,
-        "pct_text": "1.2%",
-        "line": "[2026-04-01 19:19:56] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0574, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=42397.0000"
+        "pct_text": "3.6%",
+        "line": "[2026-04-01 19:37:46] Progress 30/834 (3.6%) latest=64af82458c600fc6dc178b0b5764b8303effce8f1e031f2298e2bdac371c7e04 | token_f1=0.0481, exact_match=0.0000, rubric_coverage=0.9500, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=49808.7333"
       },
       "metric_digest": null,
       "log_tail": [
@@ -490,7 +510,9 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=single_agent_no_rag, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
         "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0379, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
-        "[2026-04-01 19:19:56] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0574, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=42397.0000"
+        "[2026-04-01 19:19:56] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0574, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=42397.0000",
+        "[2026-04-01 19:28:45] Progress 20/834 (2.4%) latest=7e93d7201287714ea11951301c5994ee44b9e3ac30becd9c26e16498e305926e | token_f1=0.0524, exact_match=0.0000, rubric_coverage=0.9833, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=47670.9500",
+        "[2026-04-01 19:37:46] Progress 30/834 (3.6%) latest=64af82458c600fc6dc178b0b5764b8303effce8f1e031f2298e2bdac371c7e04 | token_f1=0.0481, exact_match=0.0000, rubric_coverage=0.9500, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=49808.7333"
       ],
       "log_timeline": [
         "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
@@ -499,7 +521,7 @@
         "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=single_agent_no_rag, limit=None, examples=834",
         "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
       ],
-      "log_line_count": 8,
+      "log_line_count": 10,
       "log_errors": []
     }
   ]
