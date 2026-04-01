@@ -1,0 +1,18 @@
+# Optional per-dataset override file.
+# Use this to pin local exports for gated or repo-based benchmarks.
+registry_overrides:
+  EduBench:
+    default_loader: local_jsonl
+    default_source: data/edubench/test.jsonl
+  TutorEval:
+    default_loader: local_jsonl
+    default_source: data/tutoreval/test.jsonl
+  MathTutorBench:
+    default_loader: local_jsonl
+    default_source: data/mathtutorbench/test.jsonl
+  AgentBench:
+    default_loader: local_jsonl
+    default_source: data/agentbench/test.jsonl
+  BEIR:
+    default_loader: local_jsonl
+    default_source: data/beir/normalized_test.jsonl

@@ -1,0 +1,13 @@
+endpoints:
+  llm:
+    base_url: https://game.agaii.org/llm/v1
+    capability: text
+    api_key_env: AGAII_LLM_API_KEY
+    default_model: null
+    timeout_s: 120
+  mllm:
+    base_url: https://game.agaii.org/mllm/v1
+    capability: multimodal
+    api_key_env: AGAII_MLLM_API_KEY
+    default_model: null
+    timeout_s: 120

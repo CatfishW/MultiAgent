@@ -1,0 +1,29 @@
+pipeline:
+  default_architecture: hybrid_fast
+  enable_swarm_runtime: false
+  enable_critic: true
+  enable_rubric_agent: true
+  enable_diagnoser: true
+  enable_planner_llm: false
+  use_fast_rule_planner: true
+  parallel_specialists: true
+retriever:
+  chunk_size: 220
+  chunk_overlap: 40
+  top_k: 8
+  final_k: 4
+  latent_dim: 128
+router:
+  evidence_threshold: 0.52
+  coordination_threshold: 0.50
+datasets:
+  root_dir: data
+  use_huggingface_when_available: true
+  local_only: false
+  registry_overrides:
+    MathTutorBench:
+      default_loader: local_jsonl
+      default_source: data/mathtutorbench/test.jsonl
+    BEIR:
+      default_loader: local_jsonl
+      default_source: data/beir/normalized_test.jsonl
