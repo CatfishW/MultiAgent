@@ -62,6 +62,20 @@ h1 {
   font-size: 1.22rem;
 }
 
+.hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.snapshot-time {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .sketch-btn {
   border: var(--border);
   background: var(--signal);
@@ -101,13 +115,23 @@ h1 {
 }
 
 .card-best {
-  grid-column: span 8;
+  grid-column: span 4;
   background: linear-gradient(165deg, #eafee9 0%, #d8f5e2 100%);
+}
+
+.card-rank {
+  grid-column: span 4;
+  background: linear-gradient(160deg, #ffefe3 0%, #ffe3d2 100%);
 }
 
 .card-sessions {
   grid-column: span 12;
   background: linear-gradient(160deg, #fff9f2 0%, #f6ecde 100%);
+}
+
+.card-details {
+  grid-column: span 12;
+  background: linear-gradient(160deg, #eef9ff 0%, #ddeef9 100%);
 }
 
 .stat-grid {
@@ -136,7 +160,7 @@ h1 {
 
 .dataset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 0.7rem;
 }
 
@@ -163,6 +187,29 @@ h1 {
   font-size: 0.84rem;
 }
 
+.rank-grid {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.rank-tile {
+  border: var(--border);
+  background: #fff;
+  padding: 0.58rem;
+}
+
+.rank-head {
+  margin: 0;
+  font-size: 0.86rem;
+  text-transform: uppercase;
+}
+
+.rank-meta {
+  margin: 0.2rem 0 0;
+  font-family: "Patrick Hand", cursive;
+  font-size: 1.12rem;
+}
+
 .table-wrap {
   overflow: auto;
   border: var(--border);
@@ -180,6 +227,19 @@ td {
   padding: 0.58rem;
   border-bottom: 2px solid #1a1a1a;
   text-align: left;
+}
+
+tbody tr {
+  transition: background-color 0.12s ease;
+  cursor: pointer;
+}
+
+tbody tr:hover {
+  background: #fff7d8;
+}
+
+tbody tr.row-active {
+  background: #ffe6d3;
 }
 
 th {
@@ -210,6 +270,54 @@ th {
   background: #ff9a9a;
 }
 
+.score-chip {
+  display: inline-block;
+  border: 2px solid var(--ink);
+  background: #fff;
+  font-weight: 800;
+  font-size: 0.76rem;
+  padding: 0.06rem 0.4rem;
+}
+
+.detail-pane {
+  border: var(--border);
+  background: #fff;
+  padding: 0.85rem;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-block {
+  border: 2px solid var(--ink);
+  padding: 0.52rem;
+  background: #fffef8;
+}
+
+.detail-title {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.detail-mono {
+  margin: 0;
+  font-family: "Courier New", monospace;
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  line-height: 1.35;
+}
+
+.detail-empty {
+  margin: 0;
+  font-family: "Patrick Hand", cursive;
+  font-size: 1.15rem;
+}
+
 .reveal {
   opacity: 0;
   transform: translateY(12px) rotate(-0.5deg);
@@ -233,12 +341,18 @@ th {
 
 @media (max-width: 900px) {
   .card-overview,
+  .card-rank,
   .card-best,
-  .card-sessions {
+  .card-sessions,
+  .card-details {
     grid-column: span 12;
   }
 
   .hero-subtitle {
     font-size: 1.06rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
   }
 }

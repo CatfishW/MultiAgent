@@ -157,7 +157,11 @@ class DatasetRegistry:
             raise KeyError(f"Unknown dataset: {dataset_name}. Available: {', '.join(self.names())}") from exc
 
         transform = generic_text_transform
-        if spec.name == "HotpotQA":
+        if spec.name == "EduBench":
+            transform = TRANSFORMS["edubench"]
+        elif spec.name in {"TutorEval", "LM-Science-Tutor"}:
+            transform = TRANSFORMS["tutoreval"]
+        elif spec.name == "HotpotQA":
             transform = TRANSFORMS["hotpot"]
         elif spec.name == "FEVER":
             transform = TRANSFORMS["fever"]

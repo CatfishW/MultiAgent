@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..core.contracts import ArchitectureFamily, BenchmarkExample, EvaluationRecord
-from .metrics import compute_metrics, summarize
+from .metrics import canonical_answer_text, compute_metrics, summarize
 
 
 class BenchmarkEvaluator:
@@ -18,6 +18,7 @@ class BenchmarkEvaluator:
         metric_rows: list[dict[str, float]] = []
         for example in examples:
             response = await system.run_example(example, architecture=architecture)
+            normalized_answer = canonical_answer_text(response.answer)
             metrics = compute_metrics(example, response)
             metric_rows.append(metrics)
             records.append(
@@ -26,7 +27,7 @@ class BenchmarkEvaluator:
                     dataset_name=example.dataset_name,
                     architecture=response.architecture.value,
                     metrics=metrics,
-                    answer=response.answer,
+                    answer=normalized_answer,
                     gold_answer=example.gold_answer,
                     retrieved_doc_ids=[chunk.doc_id for chunk in response.retrieved_chunks],
                 )

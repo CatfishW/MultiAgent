@@ -2,6 +2,8 @@ endpoints:
   llm:
     base_url: https://game.agaii.org/llm/v1
     capability: text
+    # Set to true when the endpoint can accept image inputs even if capability is text.
+    supports_vision: true
     api_key_env: AGAII_LLM_API_KEY
     default_model: null
     timeout_s: 120

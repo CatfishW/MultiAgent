@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, Iterable
 import json
+import re
 
 from ..core.contracts import BenchmarkExample, ConversationTurn
 from ..utils.text import stable_hash
@@ -10,6 +11,9 @@ from .base import DatasetAdapter, DatasetSpec
 
 
 TransformFn = Callable[[dict[str, Any], DatasetSpec], BenchmarkExample]
+
+
+_SCORE_PATTERN = re.compile(r'"?score"?\s*[:=]\s*([0-9]+(?:\.[0-9]+)?)', re.IGNORECASE)
 
 
 def _safe_list(value: Any) -> list[Any]:
@@ -29,6 +33,112 @@ def _parse_json_if_needed(value: Any) -> Any:
             except Exception:
                 return value
     return value
+
+
+def _coerce_dict(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return dict(value)
+    parsed = _parse_json_if_needed(value)
+    if isinstance(parsed, dict):
+        return dict(parsed)
+    return {}
+
+
+def _extract_json_object(text: str) -> dict[str, Any] | None:
+    stripped = text.strip()
+    if not stripped:
+        return None
+
+    fenced_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", stripped, flags=re.IGNORECASE | re.DOTALL)
+    if fenced_match:
+        stripped = fenced_match.group(1).strip()
+
+    candidates = [stripped]
+    if "{" in stripped and "}" in stripped:
+        start = stripped.find("{")
+        end = stripped.rfind("}")
+        if start < end:
+            sliced = stripped[start : end + 1]
+            if sliced != stripped:
+                candidates.append(sliced)
+
+    for candidate in candidates:
+        try:
+            payload = json.loads(candidate)
+        except Exception:
+            continue
+        if isinstance(payload, dict):
+            return payload
+    return None
+
+
+def _extract_score(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(max(0.0, min(100.0, float(value))))
+
+    if isinstance(value, str):
+        parsed = _extract_json_object(value)
+        if isinstance(parsed, dict):
+            nested = _extract_score(_first_present(parsed, "score"))
+            if nested is not None:
+                return nested
+
+        match = _SCORE_PATTERN.search(value)
+        if match:
+            return float(max(0.0, min(100.0, float(match.group(1)))))
+
+    return None
+
+
+def _split_points(value: Any) -> list[str]:
+    if value is None:
+        return []
+
+    if isinstance(value, list):
+        candidates = [str(item) for item in value]
+    else:
+        candidates = str(value).splitlines()
+
+    cleaned: list[str] = []
+    for item in candidates:
+        text = str(item).strip()
+        if not text:
+            continue
+        text = re.sub(r"^\s*(?:[-*•]+|\d+[\).])\s*", "", text).strip()
+        if text:
+            cleaned.append(text)
+
+    if len(cleaned) <= 1 and isinstance(value, str) and ";" in value:
+        for item in value.split(";"):
+            text = re.sub(r"^\s*(?:[-*•]+|\d+[\).])\s*", "", item).strip()
+            if text:
+                cleaned.append(text)
+
+    dedup: list[str] = []
+    seen = set()
+    for item in cleaned:
+        lowered = item.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        dedup.append(item)
+    return dedup
+
+
+def _merge_unique(base: list[str] | None, extra: Iterable[str]) -> list[str]:
+    merged: list[str] = []
+    seen = set()
+
+    for item in list(base or []) + [str(value) for value in extra if str(value).strip()]:
+        text = str(item).strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        merged.append(text)
+    return merged
 
 
 def _first_present(row: dict[str, Any], *keys: str, default: Any = None) -> Any:
@@ -79,6 +189,79 @@ def generic_text_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkE
         images=[str(item) for item in images if item],
         metadata={key: value for key, value in row.items() if key not in {"question", "query", "prompt", "instruction", "input", "answer", "gold", "gold_answer", "target", "output", "label", "context", "passage", "document", "chapter", "lecture", "source", "history", "dialogue", "messages", "rubric", "criteria", "evaluation_criteria", "images", "image", "image_path"}},
     )
+
+
+def edubench_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkExample:
+    example = generic_text_transform(row, spec)
+    metadata = dict(example.metadata)
+    nested = _coerce_dict(metadata.get("metadata") or row.get("metadata"))
+
+    model_predictions = _first_present(row, "model_predictions")
+    if model_predictions is None:
+        model_predictions = _first_present(nested, "model_predictions")
+    prediction_rows = model_predictions if isinstance(model_predictions, list) else []
+
+    reference_scores: list[float] = []
+    rubric_terms: list[str] = []
+
+    for prediction in prediction_rows:
+        if not isinstance(prediction, dict):
+            continue
+        response_text = prediction.get("response")
+        if not isinstance(response_text, str):
+            continue
+
+        parsed = _extract_json_object(response_text)
+        if isinstance(parsed, dict):
+            score = _extract_score(_first_present(parsed, "score"))
+            if score is not None:
+                reference_scores.append(score)
+
+            details = _first_present(parsed, "scoring_details", "scoring details")
+            if isinstance(details, dict):
+                rubric_terms.extend(str(key) for key in details.keys())
+            elif isinstance(details, list):
+                rubric_terms.extend(str(item) for item in details)
+            elif isinstance(details, str):
+                rubric_terms.extend(_split_points(details))
+        else:
+            score = _extract_score(response_text)
+            if score is not None:
+                reference_scores.append(score)
+
+    rubric_terms.extend(["Score", "Scoring Details", "Personalized Feedback"])
+    example.rubric = _merge_unique(example.rubric, rubric_terms) or None
+
+    if reference_scores:
+        metadata["edubench_reference_score_mean"] = round(sum(reference_scores) / len(reference_scores), 4)
+        metadata["edubench_reference_score_min"] = min(reference_scores)
+        metadata["edubench_reference_score_max"] = max(reference_scores)
+        metadata["edubench_reference_score_count"] = len(reference_scores)
+
+    metadata["evaluation_profile"] = "edubench_consensus"
+    example.metadata = metadata
+    return example
+
+
+def tutoreval_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkExample:
+    example = generic_text_transform(row, spec)
+    metadata = dict(example.metadata)
+    nested = _coerce_dict(metadata.get("metadata") or row.get("metadata"))
+
+    key_points_value = _first_present(row, "key_points")
+    if key_points_value is None:
+        key_points_value = _first_present(nested, "key_points")
+    key_points = _split_points(key_points_value)
+
+    if key_points:
+        example.rubric = _merge_unique(example.rubric, key_points) or None
+        if example.gold_answer is None:
+            example.gold_answer = " ".join(key_points)
+        metadata["tutoreval_key_points"] = key_points
+
+    metadata["evaluation_profile"] = "tutoreval_key_points"
+    example.metadata = metadata
+    return example
 
 
 def hotpot_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkExample:
@@ -186,6 +369,8 @@ def long_context_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkE
 
 TRANSFORMS: dict[str, TransformFn] = {
     "generic": generic_text_transform,
+    "edubench": edubench_transform,
+    "tutoreval": tutoreval_transform,
     "hotpot": hotpot_transform,
     "fever": fever_transform,
     "scienceqa": scienceqa_transform,

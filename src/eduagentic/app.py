@@ -37,15 +37,29 @@ class ConferenceEduSystem:
             self._deps.text_model = descriptor.model_id
             self._deps.text_client = self.registry.client_for(self.config.endpoints["llm"])
             self._deps.text_chat_extra = dict(self.config.endpoints["llm"].chat_extra)
+
+        vision_descriptor = None
         if "mllm" in self.config.endpoints and self.config.endpoints["mllm"].enabled:
             try:
-                descriptor = await self.registry.pick_model(capability="multimodal", endpoint_name="mllm")
-                self._deps.vision_model = descriptor.model_id
-                self._deps.vision_client = self.registry.client_for(self.config.endpoints["mllm"])
-                self._deps.vision_chat_extra = dict(self.config.endpoints["mllm"].chat_extra)
+                vision_descriptor = await self.registry.pick_model(capability="multimodal", endpoint_name="mllm")
             except LookupError:
-                self._deps.vision_model = None
-                self._deps.vision_client = None
+                vision_descriptor = None
+
+        if vision_descriptor is None:
+            try:
+                vision_descriptor = await self.registry.pick_model(capability="multimodal")
+            except LookupError:
+                vision_descriptor = None
+
+        if vision_descriptor is not None:
+            endpoint = self.config.endpoints[vision_descriptor.endpoint]
+            self._deps.vision_model = vision_descriptor.model_id
+            self._deps.vision_client = self.registry.client_for(endpoint)
+            self._deps.vision_chat_extra = dict(endpoint.chat_extra)
+        else:
+            self._deps.vision_model = None
+            self._deps.vision_client = None
+            self._deps.vision_chat_extra = {}
         self._pipelines = {
             ArchitectureFamily.CLASSICAL_RAG: ClassicalRAGPipeline(self.config, self._deps, tracker=self.state_tracker),
             ArchitectureFamily.AGENTIC_RAG: AgenticRAGPipeline(self.config, self._deps, tracker=self.state_tracker),

@@ -16,6 +16,7 @@ class EndpointConfig:
     name: str
     base_url: str
     capability: str = "text"
+    supports_vision: bool = False
     api_key_env: str | None = None
     default_model: str | None = None
     timeout_s: float = 120.0

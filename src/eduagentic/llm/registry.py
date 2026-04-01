@@ -102,10 +102,12 @@ class ModelRegistry:
         candidates: list[ModelDescriptor] = []
         endpoints = [endpoint_name] if endpoint_name else list(self.config.endpoints.keys())
         for endpoint in endpoints:
+            endpoint_config = self.config.endpoints.get(endpoint)
             models = await self.get_models(endpoint)
             for model in models:
-                if capability == "multimodal" and model.capability != "multimodal":
-                    continue
+                if capability == "multimodal":
+                    if model.capability != "multimodal" and not (endpoint_config and endpoint_config.supports_vision):
+                        continue
                 if capability == "text" and model.capability not in {"text", "multimodal"}:
                     continue
                 candidates.append(model)

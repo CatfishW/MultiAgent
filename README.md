@@ -13,6 +13,7 @@ fast execution** against **local OpenAI-compatible endpoints**:
 - text LLM endpoint: `https://game.agaii.org/llm/v1`
 - multimodal endpoint: `https://game.agaii.org/mllm/v1`
 - model discovery: `GET /models`
+- optional: mark text endpoint as vision-capable with `supports_vision: true`
 
 ## What is implemented
 
@@ -129,8 +130,6 @@ python scripts/run_benchmark.py ScienceQA --config configs/system.example.yaml -
 
 ```bash
 python scripts/prepare_datasets.py --config configs/system.example.yaml --datasets EduBench TutorEval --split test --out-dir data
-cp data/edubench/snapshot.jsonl data/edubench/test.jsonl
-cp data/tutoreval/train.jsonl data/tutoreval/test.jsonl
 ```
 
 ### 7. Launch parallel comparison sessions (screen)
@@ -147,6 +146,23 @@ This launches four architectures for each dataset:
 - `single_agent_no_rag`
 
 Logs are written to `logs/experiments/` and results to `artifacts/experiments/`.
+
+## EduBench / TutorEval evaluation policy
+
+The two datasets expose different supervision signals, so evaluation uses
+dataset-aware mapping:
+
+- `EduBench`
+  - public rows typically do not ship a direct gold answer.
+  - the adapter extracts consensus reference scores from `metadata.model_predictions`.
+  - metrics include `edu_json_compliance` and `edu_score_alignment`.
+- `TutorEval`
+  - public rows use `metadata.key_points` as supervision.
+  - key points are normalized into rubric items and a synthesized gold target.
+  - metrics include `rubric_coverage` and token overlap against key points.
+
+This avoids the incorrect all-zero correctness metrics caused by missing direct
+`answer` fields in the raw public exports.
 
 ### 8. Build dashboard data for the web monitor
 

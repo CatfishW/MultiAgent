@@ -204,6 +204,8 @@ def _manual_snapshot_load(
     limit: int | None,
 ) -> list[BenchmarkExample]:
     spec = system.dataset_registry.specs[dataset_name]
+    adapter = system.dataset_registry.adapter_for(dataset_name)
+    transform = getattr(adapter, "transform", generic_text_transform)
     dataset_id = source or spec.default_source
     if not dataset_id:
         return []
@@ -235,7 +237,7 @@ def _manual_snapshot_load(
                 if isinstance(only_value, dict):
                     row = only_value
 
-            example = generic_text_transform(row, spec)
+            example = transform(row, spec)
             if not example.question.strip():
                 continue
             examples.append(example)

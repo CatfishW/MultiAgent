@@ -168,6 +168,10 @@ class OpenAICompatClient:
             content = message.get("content")
             if isinstance(content, str):
                 return content
+            if isinstance(content, dict):
+                text = content.get("text") or content.get("content")
+                if isinstance(text, str):
+                    return text
             if isinstance(content, list):
                 parts: list[str] = []
                 for item in content:
@@ -178,9 +182,16 @@ class OpenAICompatClient:
                             parts.append(item["content"])
                 if parts:
                     return "\n".join(parts)
+            reasoning_content = message.get("reasoning_content")
+            if isinstance(reasoning_content, str) and reasoning_content.strip():
+                return reasoning_content
+            if isinstance(choice.get("text"), str):
+                return choice["text"]
         output_text = payload.get("output_text")
         if isinstance(output_text, str):
             return output_text
         if isinstance(payload.get("content"), str):
             return payload["content"]
+        if isinstance(payload.get("text"), str):
+            return payload["text"]
         return str(payload)

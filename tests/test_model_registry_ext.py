@@ -44,3 +44,25 @@ def test_openai_compat_extract_text():
     client = OpenAICompatClient(base_url="https://example.invalid/v1")
     payload = {"choices": [{"message": {"content": "hello world"}}]}
     assert client._extract_text(payload) == "hello world"
+
+
+@pytest.mark.asyncio
+async def test_pick_model_allows_multimodal_from_vision_capable_text_endpoint():
+    config = AppConfig(
+        endpoints={
+            "llm": EndpointConfig(
+                name="llm",
+                base_url="https://example.invalid/v1",
+                capability="text",
+                supports_vision=True,
+            )
+        }
+    )
+    registry = ModelRegistry(config)
+    registry._models = {
+        "llm": [ModelDescriptor(endpoint="llm", model_id="qwen-4b", capability="text", raw={})]
+    }
+
+    descriptor = await registry.pick_model(capability="multimodal")
+
+    assert descriptor.model_id == "qwen-4b"

@@ -18,13 +18,21 @@
       <p class="hero-kicker">AI.AGII.ORG / MULTI-AGENT</p>
       <h1>Experiment Session Board</h1>
       <p class="hero-subtitle">Neo-brutalist monitor for EduBench + TutorEval runs across multi-agent, RAG, and no-RAG baselines.</p>
-      <button id="refreshButton" class="sketch-btn" type="button">Refresh Snapshot</button>
+      <div class="hero-actions">
+        <button id="refreshButton" class="sketch-btn" type="button">Refresh Snapshot</button>
+        <p id="snapshotTime" class="snapshot-time">snapshot: --</p>
+      </div>
     </header>
 
     <main class="board">
       <section class="card card-overview reveal" aria-labelledby="overview-title">
         <h2 id="overview-title">Run Health</h2>
         <div id="overviewGrid" class="stat-grid"></div>
+      </section>
+
+      <section class="card card-rank reveal" aria-labelledby="rank-title">
+        <h2 id="rank-title">Architecture Pulse</h2>
+        <div id="rankGrid" class="rank-grid"></div>
       </section>
 
       <section class="card card-best reveal" aria-labelledby="best-title">
@@ -42,13 +50,21 @@
                 <th>Architecture</th>
                 <th>Status</th>
                 <th>Records</th>
+                <th>Composite</th>
                 <th>Token F1</th>
+                <th>Rubric</th>
+                <th>Edu Align</th>
                 <th>Latency (ms)</th>
               </tr>
             </thead>
             <tbody id="sessionsBody"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="card card-details reveal" aria-labelledby="detail-title">
+        <h2 id="detail-title">Session Deep Dive</h2>
+        <div id="sessionDetail" class="detail-pane"></div>
       </section>
     </main>
 

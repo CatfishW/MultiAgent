@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import time
+from collections import Counter
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
@@ -27,8 +28,58 @@ def _log(message: str) -> None:
     print(f"[{now}] {message}", flush=True)
 
 
+def _dataset_profile(examples: list[Any]) -> dict[str, Any]:
+    total = len(examples)
+    profile_counts: Counter[str] = Counter()
+    with_gold = 0
+    with_rubric = 0
+    with_images = 0
+
+    for example in examples:
+        if getattr(example, "gold_answer", None):
+            with_gold += 1
+        rubric = getattr(example, "rubric", None)
+        if rubric:
+            with_rubric += 1
+        images = getattr(example, "images", None)
+        if images:
+            with_images += 1
+        metadata = getattr(example, "metadata", {}) or {}
+        eval_profile = str(metadata.get("evaluation_profile", "generic"))
+        profile_counts[eval_profile] += 1
+
+    return {
+        "total_examples": total,
+        "with_gold_answer": with_gold,
+        "with_rubric": with_rubric,
+        "with_images": with_images,
+        "evaluation_profiles": dict(profile_counts),
+    }
+
+
+def _metric_digest(summary: dict[str, Any]) -> str:
+    keys = [
+        "token_f1",
+        "exact_match",
+        "rubric_coverage",
+        "edu_json_compliance",
+        "edu_score_alignment",
+        "grounded_overlap",
+        "latency_ms",
+    ]
+    parts: list[str] = []
+    for key in keys:
+        if key not in summary:
+            continue
+        value = summary.get(key)
+        if isinstance(value, (int, float)):
+            parts.append(f"{key}={value:.4f}")
+    return ", ".join(parts)
+
+
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     started = time.time()
+    started_at = time.strftime("%Y-%m-%d %H:%M:%S")
     system = ConferenceEduSystem(args.config)
 
     _log("Initializing models from configured endpoints...")
@@ -57,18 +108,18 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
             index_path = str(index_file)
             _log(f"Saved index file: {index_path}")
 
+    examples = system.load_examples(args.dataset_name, source=args.source, split=args.split, limit=args.limit)
+    profile = _dataset_profile(examples)
     _log(
         "Running evaluation: "
-        f"dataset={args.dataset_name}, split={args.split}, architecture={args.architecture}, limit={args.limit}"
+        f"dataset={args.dataset_name}, split={args.split}, architecture={args.architecture}, "
+        f"limit={args.limit}, examples={len(examples)}"
     )
-    results = await system.evaluate_dataset(
-        args.dataset_name,
-        source=args.source,
-        split=args.split,
-        architecture=args.architecture,
-        limit=args.limit,
-    )
+    _log(f"Dataset supervision profile: {json.dumps(profile, ensure_ascii=False)}")
+
+    results = await system.evaluator.evaluate(system, examples, architecture=args.architecture)
     duration_s = round(time.time() - started, 3)
+    ended_at = time.strftime("%Y-%m-%d %H:%M:%S")
 
     payload = {
         "meta": {
@@ -81,13 +132,19 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
             "corpus": args.corpus,
             "index_path": index_path,
             "duration_s": duration_s,
+            "started_at": started_at,
+            "ended_at": ended_at,
             "text_model": system._deps.text_model,
             "vision_model": system._deps.vision_model,
             "text_chat_extra": system._deps.text_chat_extra,
             "vision_chat_extra": system._deps.vision_chat_extra,
+            "dataset_profile": profile,
         },
         "result": results,
     }
+    if isinstance(results, dict):
+        summary = results.get("summary", {}) or {}
+        _log(f"Metric digest: {_metric_digest(summary)}")
     return payload
 
 
