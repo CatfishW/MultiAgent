@@ -5,6 +5,11 @@ endpoints:
     api_key_env: AGAII_LLM_API_KEY
     default_model: null
     timeout_s: 120
+    # OpenAI-compatible passthrough payload merged into every chat request.
+    # For Qwen reasoning models, this can be used to control thinking budget.
+    chat_extra:
+      extra_body:
+        thinking_budget: 2048
   mllm:
     base_url: https://game.agaii.org/mllm/v1
     capability: multimodal

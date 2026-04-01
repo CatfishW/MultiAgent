@@ -8,3 +8,8 @@ __pycache__/
 .coverage
 htmlcov/
 .DS_Store
+.cache/
+artifacts/
+logs/
+data/
+src/eduagentic_swarm.egg-info/

@@ -32,15 +32,25 @@ def _parse_json_if_needed(value: Any) -> Any:
 
 
 def _first_present(row: dict[str, Any], *keys: str, default: Any = None) -> Any:
+    def _is_present(value: Any) -> bool:
+        return value is not None and value != ""
+
+    normalized = {
+        str(key).strip().lower().replace(" ", "_"): value
+        for key, value in row.items()
+    }
     for key in keys:
-        if key in row and row[key] not in {None, ""}:
+        if key in row and _is_present(row[key]):
             return row[key]
+        normalized_key = key.strip().lower().replace(" ", "_")
+        if normalized_key in normalized and _is_present(normalized[normalized_key]):
+            return normalized[normalized_key]
     return default
 
 
 def generic_text_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkExample:
     question = str(_first_present(row, "question", "query", "prompt", "instruction", "input", default=""))
-    answer = _first_present(row, "answer", "gold", "gold_answer", "target", "output", "label")
+    answer = _first_present(row, "answer", "gold", "gold_answer", "target", "output", "label", "response", "corrected_answer")
     context = _first_present(row, "context", "passage", "document", "chapter", "lecture", "source", "history")
     rubric = _parse_json_if_needed(_first_present(row, "rubric", "criteria", "evaluation_criteria"))
     if rubric is None:
@@ -237,6 +247,15 @@ class HuggingFaceAdapter(DatasetAdapter):
                 "Install it or export the dataset to local JSONL and point the registry override there."
             ) from exc
         actual_id = source or self.dataset_id
-        dataset = load_dataset(actual_id, name=self.subset, split=split or self.spec.split)
-        rows = list(dataset.select(range(min(limit, len(dataset))))) if limit is not None else list(dataset)
+        resolved_split = split or self.spec.split
+        try:
+            dataset = load_dataset(actual_id, name=self.subset, split=resolved_split)
+            rows = list(dataset.select(range(min(limit, len(dataset))))) if limit is not None else list(dataset)
+        except Exception:
+            streamed = load_dataset(actual_id, name=self.subset, split=resolved_split, streaming=True)
+            rows = []
+            for idx, row in enumerate(streamed):
+                rows.append(dict(row))
+                if limit is not None and idx + 1 >= limit:
+                    break
         return [self.transform(dict(row), self.spec) for row in rows]

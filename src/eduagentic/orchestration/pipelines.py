@@ -211,6 +211,31 @@ class MultiAgentNoRAGPipeline(BasePipeline):
         )
 
 
+class SingleAgentNoRAGPipeline(BasePipeline):
+    architecture = ArchitectureFamily.SINGLE_AGENT_NO_RAG
+
+    async def run(self, example: BenchmarkExample, route: RouteDecision) -> PipelineResponse:
+        started = time.perf_counter()
+        trace: list[TraceEvent] = []
+        context = self._empty_context(example, route)
+        tutor = await self.tutor.run(context)
+        agent_outputs: dict[str, AgentResult] = {"tutor": tutor}
+        answer = tutor
+        if route.use_critic:
+            critic = await self.critic.run(replace(context, draft_answer=tutor.text))
+            agent_outputs["critic"] = critic
+            answer = critic
+        return self._finalize(
+            example=example,
+            route=route,
+            answer_result=answer,
+            retrieved_chunks=[],
+            agent_outputs=agent_outputs,
+            trace=trace,
+            started=started,
+        )
+
+
 class HybridFastPipeline(BasePipeline):
     architecture = ArchitectureFamily.HYBRID_FAST
 

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multi-Agent Experiment Board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Patrick+Hand&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="paper-noise" aria-hidden="true"></div>
+    <header class="hero">
+      <p class="hero-kicker">AI.AGII.ORG / MULTI-AGENT</p>
+      <h1>Experiment Session Board</h1>
+      <p class="hero-subtitle">Neo-brutalist monitor for EduBench + TutorEval runs across multi-agent, RAG, and no-RAG baselines.</p>
+      <button id="refreshButton" class="sketch-btn" type="button">Refresh Snapshot</button>
+    </header>
+
+    <main class="board">
+      <section class="card card-overview reveal" aria-labelledby="overview-title">
+        <h2 id="overview-title">Run Health</h2>
+        <div id="overviewGrid" class="stat-grid"></div>
+      </section>
+
+      <section class="card card-best reveal" aria-labelledby="best-title">
+        <h2 id="best-title">Best So Far</h2>
+        <div id="datasetCards" class="dataset-grid"></div>
+      </section>
+
+      <section class="card card-sessions reveal" aria-labelledby="sessions-title">
+        <h2 id="sessions-title">Session Ledger</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Dataset</th>
+                <th>Architecture</th>
+                <th>Status</th>
+                <th>Records</th>
+                <th>Token F1</th>
+                <th>Latency (ms)</th>
+              </tr>
+            </thead>
+            <tbody id="sessionsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

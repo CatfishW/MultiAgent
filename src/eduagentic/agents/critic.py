@@ -46,6 +46,7 @@ class CriticAgent(BaseAgent):
             ],
             temperature=0.0,
             max_tokens=context.budget.max_response_tokens,
+            extra=self.deps.text_chat_extra or None,
         )
         return AgentResult(
             role=self.role_name,

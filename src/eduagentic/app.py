@@ -10,7 +10,7 @@ from .evaluation.evaluator import BenchmarkEvaluator
 from .llm import ModelRegistry
 from .ml.regime_router import LightweightRegimeRouter
 from .ml.student_state import StudentStateTracker
-from .orchestration.pipelines import AgenticRAGPipeline, ClassicalRAGPipeline, HybridFastPipeline, MultiAgentNoRAGPipeline
+from .orchestration.pipelines import AgenticRAGPipeline, ClassicalRAGPipeline, HybridFastPipeline, MultiAgentNoRAGPipeline, SingleAgentNoRAGPipeline
 from .retrieval import ContextPacker, HybridIndex, LightweightReranker, chunk_documents, load_documents_from_path
 from .agents.base import AgentDependencies
 
@@ -31,16 +31,18 @@ class ConferenceEduSystem:
         self._pipelines = None
 
     async def initialize_models(self) -> None:
-        await self.registry.refresh()
+        await self.registry.refresh(force=True)
         if "llm" in self.config.endpoints and self.config.endpoints["llm"].enabled:
             descriptor = await self.registry.pick_model(capability="text", endpoint_name="llm")
             self._deps.text_model = descriptor.model_id
             self._deps.text_client = self.registry.client_for(self.config.endpoints["llm"])
+            self._deps.text_chat_extra = dict(self.config.endpoints["llm"].chat_extra)
         if "mllm" in self.config.endpoints and self.config.endpoints["mllm"].enabled:
             try:
                 descriptor = await self.registry.pick_model(capability="multimodal", endpoint_name="mllm")
                 self._deps.vision_model = descriptor.model_id
                 self._deps.vision_client = self.registry.client_for(self.config.endpoints["mllm"])
+                self._deps.vision_chat_extra = dict(self.config.endpoints["mllm"].chat_extra)
             except LookupError:
                 self._deps.vision_model = None
                 self._deps.vision_client = None
@@ -48,6 +50,7 @@ class ConferenceEduSystem:
             ArchitectureFamily.CLASSICAL_RAG: ClassicalRAGPipeline(self.config, self._deps, tracker=self.state_tracker),
             ArchitectureFamily.AGENTIC_RAG: AgenticRAGPipeline(self.config, self._deps, tracker=self.state_tracker),
             ArchitectureFamily.NON_RAG_MULTI_AGENT: MultiAgentNoRAGPipeline(self.config, self._deps, tracker=self.state_tracker),
+            ArchitectureFamily.SINGLE_AGENT_NO_RAG: SingleAgentNoRAGPipeline(self.config, self._deps, tracker=self.state_tracker),
             ArchitectureFamily.HYBRID_FAST: HybridFastPipeline(self.config, self._deps, tracker=self.state_tracker),
         }
 

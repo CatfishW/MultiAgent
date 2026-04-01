@@ -21,6 +21,7 @@ class EndpointConfig:
     timeout_s: float = 120.0
     max_retries: int = 2
     enabled: bool = True
+    chat_extra: dict[str, Any] = field(default_factory=dict)
 
     @property
     def api_key(self) -> str | None:

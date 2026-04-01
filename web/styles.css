@@ -1,0 +1,244 @@
+:root {
+  --paper: #f6efe3;
+  --ink: #141414;
+  --signal: #ff6a3d;
+  --mint: #2bc48a;
+  --sun: #ffd45c;
+  --fog: #ece3d2;
+  --border: 3px solid var(--ink);
+  --shadow: 7px 7px 0 var(--ink);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Bricolage Grotesque", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(circle at 15% 12%, #fff9ed 0%, var(--paper) 55%, #efe5d2 100%);
+  position: relative;
+}
+
+.paper-noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-radial-gradient(circle at 0 0, rgba(20, 20, 20, 0.03), rgba(20, 20, 20, 0.03) 1px, transparent 2px, transparent 6px);
+  opacity: 0.35;
+}
+
+.hero {
+  padding: 2rem 1.2rem 0.8rem;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.hero-kicker {
+  margin: 0;
+  letter-spacing: 0.13em;
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #4d4437;
+}
+
+h1 {
+  margin: 0.3rem 0 0.45rem;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-decoration-thickness: 4px;
+  text-decoration-style: wavy;
+  text-underline-offset: 8px;
+}
+
+.hero-subtitle {
+  margin: 0 0 1rem;
+  max-width: 72ch;
+  font-family: "Patrick Hand", cursive;
+  font-size: 1.22rem;
+}
+
+.sketch-btn {
+  border: var(--border);
+  background: var(--signal);
+  color: #1f0a01;
+  box-shadow: var(--shadow);
+  padding: 0.68rem 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transform: rotate(-1.1deg);
+}
+
+.board {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.6rem 1.2rem 2rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.card {
+  border: var(--border);
+  box-shadow: var(--shadow);
+  background: #fff9f0;
+  padding: 0.95rem;
+}
+
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+.card-overview {
+  grid-column: span 4;
+  background: linear-gradient(165deg, #fff6df 0%, #f9eccf 100%);
+}
+
+.card-best {
+  grid-column: span 8;
+  background: linear-gradient(165deg, #eafee9 0%, #d8f5e2 100%);
+}
+
+.card-sessions {
+  grid-column: span 12;
+  background: linear-gradient(160deg, #fff9f2 0%, #f6ecde 100%);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.stat-tile {
+  border: var(--border);
+  background: #fff;
+  padding: 0.5rem;
+  min-height: 74px;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.stat-value {
+  font-size: 1.65rem;
+  font-weight: 800;
+}
+
+.dataset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.7rem;
+}
+
+.dataset-tile {
+  border: var(--border);
+  background: #fff;
+  padding: 0.6rem;
+  transform: rotate(-0.45deg);
+}
+
+.dataset-name {
+  margin: 0;
+  font-size: 1.04rem;
+}
+
+.dataset-best {
+  margin: 0.35rem 0 0.1rem;
+  font-family: "Patrick Hand", cursive;
+  font-size: 1.18rem;
+}
+
+.dataset-meta {
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: var(--border);
+  background: #fff;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+th,
+td {
+  padding: 0.58rem;
+  border-bottom: 2px solid #1a1a1a;
+  text-align: left;
+}
+
+th {
+  text-transform: uppercase;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  background: var(--fog);
+}
+
+.status-pill {
+  display: inline-block;
+  border: 2px solid var(--ink);
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.status-running {
+  background: var(--sun);
+}
+
+.status-finished {
+  background: var(--mint);
+}
+
+.status-failed {
+  background: #ff9a9a;
+}
+
+.reveal {
+  opacity: 0;
+  transform: translateY(12px) rotate(-0.5deg);
+  animation: rise 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.reveal:nth-of-type(2) {
+  animation-delay: 0.11s;
+}
+
+.reveal:nth-of-type(3) {
+  animation-delay: 0.19s;
+}
+
+@keyframes rise {
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@media (max-width: 900px) {
+  .card-overview,
+  .card-best,
+  .card-sessions {
+    grid-column: span 12;
+  }
+
+  .hero-subtitle {
+    font-size: 1.06rem;
+  }
+}

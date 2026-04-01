@@ -20,6 +20,7 @@ fast execution** against **local OpenAI-compatible endpoints**:
 - `classical_rag`
 - `agentic_rag`
 - `non_rag_multi_agent`
+- `single_agent_no_rag`
 - `hybrid_fast` (default proposed method)
 
 ### Core research features
@@ -122,6 +123,35 @@ python scripts/demo_local_endpoints.py "Explain photosynthesis with evidence." -
 
 ```bash
 python scripts/run_benchmark.py ScienceQA --config configs/system.example.yaml --limit 20 --out artifacts/scienceqa.json
+```
+
+### 6. Prepare EduBench / TutorEval local exports
+
+```bash
+python scripts/prepare_datasets.py --config configs/system.example.yaml --datasets EduBench TutorEval --split test --out-dir data
+cp data/edubench/snapshot.jsonl data/edubench/test.jsonl
+cp data/tutoreval/train.jsonl data/tutoreval/test.jsonl
+```
+
+### 7. Launch parallel comparison sessions (screen)
+
+```bash
+./scripts/launch_parallel_sessions.sh --config configs/system.experiments.yaml --split test --limit 40
+```
+
+This launches four architectures for each dataset:
+
+- `hybrid_fast`
+- `classical_rag`
+- `non_rag_multi_agent`
+- `single_agent_no_rag`
+
+Logs are written to `logs/experiments/` and results to `artifacts/experiments/`.
+
+### 8. Build dashboard data for the web monitor
+
+```bash
+python scripts/build_dashboard_data.py --results-dir artifacts/experiments --logs-dir logs/experiments --out web/data/session_summary.json
 ```
 
 ## Dataset coverage

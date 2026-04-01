@@ -53,6 +53,7 @@ class TutorAgent(BaseAgent):
     async def run(self, context: AgentContext) -> AgentResult:
         client = self.deps.vision_client if context.route.modality.value == "multimodal" and self.deps.vision_client else self.deps.text_client
         model = self.deps.vision_model if context.route.modality.value == "multimodal" and self.deps.vision_model else self.deps.text_model
+        chat_extra = self.deps.vision_chat_extra if context.route.modality.value == "multimodal" else self.deps.text_chat_extra
         if client is None or model is None:
             answer = self._fallback_answer(context)
             return AgentResult(role=self.role_name, text=answer, confidence=0.4)
@@ -68,6 +69,7 @@ class TutorAgent(BaseAgent):
             temperature=0.15,
             max_tokens=context.budget.max_response_tokens,
             images=context.example.images,
+            extra=chat_extra or None,
         )
         return AgentResult(
             role=self.role_name,
