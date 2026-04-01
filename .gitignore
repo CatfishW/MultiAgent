@@ -12,4 +12,6 @@ htmlcov/
 artifacts/
 logs/
 data/
+!web/data/
+!web/data/session_summary.json
 src/eduagentic_swarm.egg-info/

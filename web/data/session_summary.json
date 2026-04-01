@@ -1,0 +1,506 @@
+{
+  "overview": {
+    "total_sessions": 8,
+    "finished_sessions": 0,
+    "running_sessions": 8,
+    "failed_sessions": 0,
+    "generated_at": "2026-04-01 19:20:25",
+    "architecture_leaderboard": []
+  },
+  "dataset_cards": [
+    {
+      "dataset": "EduBench",
+      "total_sessions": 4,
+      "finished_sessions": 0,
+      "best_architecture": null,
+      "best_score": null,
+      "best_metrics": null,
+      "average_score": null,
+      "status_breakdown": {
+        "finished": 0,
+        "running": 4,
+        "failed": 0
+      }
+    },
+    {
+      "dataset": "TutorEval",
+      "total_sessions": 4,
+      "finished_sessions": 0,
+      "best_architecture": null,
+      "best_score": null,
+      "best_metrics": null,
+      "average_score": null,
+      "status_breakdown": {
+        "finished": 0,
+        "running": 4,
+        "failed": 0
+      }
+    }
+  ],
+  "sessions": [
+    {
+      "session_key": "edubench_classical_rag",
+      "dataset": "EduBench",
+      "architecture": "classical_rag",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:20:16",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/edubench_classical_rag.json",
+      "log_file": "logs/experiments/exp_edubench_classical_rag.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 16956,
+        "with_gold_answer": 0,
+        "with_rubric": 16956,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "edubench_consensus": 16956
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 16956,
+        "pct_text": "0.1%",
+        "line": "[2026-04-01 19:20:16] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6706, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3328, latency_ms=44130.8000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:52] Loading retrieval index from: artifacts/experiments/index_edubench/hybrid_index.pkl",
+        "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=classical_rag, limit=None, examples=16956",
+        "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
+        "[2026-04-01 19:12:56] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3081, latency_ms=690.0000",
+        "[2026-04-01 19:20:16] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.6706, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3328, latency_ms=44130.8000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Loading retrieval index from: artifacts/experiments/index_edubench/hybrid_index.pkl",
+        "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=classical_rag, limit=None, examples=16956",
+        "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
+      ],
+      "log_line_count": 9,
+      "log_errors": []
+    },
+    {
+      "session_key": "edubench_hybrid_fast",
+      "dataset": "EduBench",
+      "architecture": "hybrid_fast",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:18:22",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/edubench_hybrid_fast.json",
+      "log_file": "logs/experiments/exp_edubench_hybrid_fast.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 16956,
+        "with_gold_answer": 0,
+        "with_rubric": 16956,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "edubench_consensus": 16956
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 16956,
+        "pct_text": "0.1%",
+        "line": "[2026-04-01 19:18:22] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7856, edu_json_compliance=0.0000, edu_score_alignment=0.2321, grounded_overlap=0.0000, latency_ms=32639.4000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:52] Loading retrieval index from: artifacts/experiments/index_edubench/hybrid_index.pkl",
+        "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=hybrid_fast, limit=None, examples=16956",
+        "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
+        "[2026-04-01 19:12:55] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7778, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
+        "[2026-04-01 19:18:22] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7856, edu_json_compliance=0.0000, edu_score_alignment=0.2321, grounded_overlap=0.0000, latency_ms=32639.4000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Loading retrieval index from: artifacts/experiments/index_edubench/hybrid_index.pkl",
+        "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=hybrid_fast, limit=None, examples=16956",
+        "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
+      ],
+      "log_line_count": 9,
+      "log_errors": []
+    },
+    {
+      "session_key": "edubench_non_rag_multi_agent",
+      "dataset": "EduBench",
+      "architecture": "non_rag_multi_agent",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:18:12",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/edubench_non_rag_multi_agent.json",
+      "log_file": "logs/experiments/exp_edubench_non_rag_multi_agent.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 16956,
+        "with_gold_answer": 0,
+        "with_rubric": 16956,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "edubench_consensus": 16956
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 16956,
+        "pct_text": "0.1%",
+        "line": "[2026-04-01 19:18:12] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9148, edu_json_compliance=0.0000, edu_score_alignment=0.2883, grounded_overlap=0.0000, latency_ms=31769.9000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:51] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:51] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:51] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:54] Running evaluation: dataset=EduBench, split=test, architecture=non_rag_multi_agent, limit=None, examples=16956",
+        "[2026-04-01 19:12:54] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
+        "[2026-04-01 19:12:54] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7778, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
+        "[2026-04-01 19:18:12] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.9148, edu_json_compliance=0.0000, edu_score_alignment=0.2883, grounded_overlap=0.0000, latency_ms=31769.9000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:51] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:51] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:54] Running evaluation: dataset=EduBench, split=test, architecture=non_rag_multi_agent, limit=None, examples=16956",
+        "[2026-04-01 19:12:54] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
+      ],
+      "log_line_count": 8,
+      "log_errors": []
+    },
+    {
+      "session_key": "edubench_single_agent_no_rag",
+      "dataset": "EduBench",
+      "architecture": "single_agent_no_rag",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:18:32",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/edubench_single_agent_no_rag.json",
+      "log_file": "logs/experiments/exp_edubench_single_agent_no_rag.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 16956,
+        "with_gold_answer": 0,
+        "with_rubric": 16956,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "edubench_consensus": 16956
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 16956,
+        "pct_text": "0.1%",
+        "line": "[2026-04-01 19:18:32] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7838, edu_json_compliance=0.0000, edu_score_alignment=0.0894, grounded_overlap=0.0000, latency_ms=33763.7000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=single_agent_no_rag, limit=None, examples=16956",
+        "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}",
+        "[2026-04-01 19:12:55] Progress 1/16956 (0.0%) latest=38933ab089af0852e9d4c0bbdcffa48017f0a3698d4446061f81264425add36b | token_f1=0.0000, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
+        "[2026-04-01 19:18:32] Progress 10/16956 (0.1%) latest=1db617a990861bcb6993d209a52311d28abb74ddb082eb5e780e509c314e3099 | token_f1=0.0000, exact_match=0.0000, rubric_coverage=0.7838, edu_json_compliance=0.0000, edu_score_alignment=0.0894, grounded_overlap=0.0000, latency_ms=33763.7000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:55] Running evaluation: dataset=EduBench, split=test, architecture=single_agent_no_rag, limit=None, examples=16956",
+        "[2026-04-01 19:12:55] Dataset supervision profile: {\"total_examples\": 16956, \"with_gold_answer\": 0, \"with_rubric\": 16956, \"with_images\": 0, \"evaluation_profiles\": {\"edubench_consensus\": 16956}}"
+      ],
+      "log_line_count": 8,
+      "log_errors": []
+    },
+    {
+      "session_key": "tutoreval_classical_rag",
+      "dataset": "TutorEval",
+      "architecture": "classical_rag",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:19:29",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/tutoreval_classical_rag.json",
+      "log_file": "logs/experiments/exp_tutoreval_classical_rag.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 834,
+        "with_gold_answer": 834,
+        "with_rubric": 834,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "tutoreval_key_points": 834
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 834,
+        "pct_text": "1.2%",
+        "line": "[2026-04-01 19:19:29] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0751, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2674, latency_ms=39729.8000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:52] Loading retrieval index from: artifacts/experiments/index_tutoreval/hybrid_index.pkl",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=classical_rag, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
+        "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0384, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2263, latency_ms=198.0000",
+        "[2026-04-01 19:19:29] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0751, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2674, latency_ms=39729.8000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Loading retrieval index from: artifacts/experiments/index_tutoreval/hybrid_index.pkl",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=classical_rag, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
+      ],
+      "log_line_count": 9,
+      "log_errors": []
+    },
+    {
+      "session_key": "tutoreval_hybrid_fast",
+      "dataset": "TutorEval",
+      "architecture": "hybrid_fast",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:17:20",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/tutoreval_hybrid_fast.json",
+      "log_file": "logs/experiments/exp_tutoreval_hybrid_fast.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 834,
+        "with_gold_answer": 834,
+        "with_rubric": 834,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "tutoreval_key_points": 834
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 834,
+        "pct_text": "1.2%",
+        "line": "[2026-04-01 19:17:20] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0823, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3154, latency_ms=26871.8000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:51] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:51] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:51] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:51] Loading retrieval index from: artifacts/experiments/index_tutoreval/hybrid_index.pkl",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=hybrid_fast, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
+        "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0620, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.2909, latency_ms=475.0000",
+        "[2026-04-01 19:17:20] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0823, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.3154, latency_ms=26871.8000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:51] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:51] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:51] Loading retrieval index from: artifacts/experiments/index_tutoreval/hybrid_index.pkl",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=hybrid_fast, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
+      ],
+      "log_line_count": 9,
+      "log_errors": []
+    },
+    {
+      "session_key": "tutoreval_non_rag_multi_agent",
+      "dataset": "TutorEval",
+      "architecture": "non_rag_multi_agent",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:16:11",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/tutoreval_non_rag_multi_agent.json",
+      "log_file": "logs/experiments/exp_tutoreval_non_rag_multi_agent.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 834,
+        "with_gold_answer": 834,
+        "with_rubric": 834,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "tutoreval_key_points": 834
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 834,
+        "pct_text": "1.2%",
+        "line": "[2026-04-01 19:16:11] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0651, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=19988.2000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=non_rag_multi_agent, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
+        "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0413, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
+        "[2026-04-01 19:16:11] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0651, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=19988.2000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=non_rag_multi_agent, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
+      ],
+      "log_line_count": 8,
+      "log_errors": []
+    },
+    {
+      "session_key": "tutoreval_single_agent_no_rag",
+      "dataset": "TutorEval",
+      "architecture": "single_agent_no_rag",
+      "status": "running",
+      "started_at": "2026-04-01 19:12:51",
+      "ended_at": "2026-04-01 19:19:56",
+      "records": 0,
+      "summary": {},
+      "metric_tiles": {},
+      "score": 0.0,
+      "result_file": "artifacts/experiments/tutoreval_single_agent_no_rag.json",
+      "log_file": "logs/experiments/exp_tutoreval_single_agent_no_rag.log",
+      "meta": {},
+      "models": {
+        "text": null,
+        "vision": null
+      },
+      "thinking_budget": null,
+      "duration_s": null,
+      "supervision_profile": {
+        "total_examples": 834,
+        "with_gold_answer": 834,
+        "with_rubric": 834,
+        "with_images": 0,
+        "evaluation_profiles": {
+          "tutoreval_key_points": 834
+        }
+      },
+      "result_fresh": false,
+      "progress": {
+        "completed": 10,
+        "total": 834,
+        "pct_text": "1.2%",
+        "line": "[2026-04-01 19:19:56] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0574, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=42397.0000"
+      },
+      "metric_digest": null,
+      "log_tail": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Text chat extra payload: {\"extra_body\": {\"thinking_budget\": 64}}",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=single_agent_no_rag, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}",
+        "[2026-04-01 19:12:52] Progress 1/834 (0.1%) latest=b8cb875b0216133c1cb3211bcaf67874822f63adc60bf1bb1748588513c57788 | token_f1=0.0379, exact_match=0.0000, rubric_coverage=1.0000, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=0.0000",
+        "[2026-04-01 19:19:56] Progress 10/834 (1.2%) latest=f506d93eaa3f3acb18bdc57d9a787862081a36177aea08022ce5e9ffb57625b9 | token_f1=0.0574, exact_match=0.0000, rubric_coverage=0.9667, edu_json_compliance=0.0000, edu_score_alignment=0.0000, grounded_overlap=0.0000, latency_ms=42397.0000"
+      ],
+      "log_timeline": [
+        "[2026-04-01 19:12:51] Initializing models from configured endpoints...",
+        "[2026-04-01 19:12:52] Selected text model: /home/tang/Models/Qwen3.5-4B",
+        "[2026-04-01 19:12:52] Selected vision model: Qwen/Qwen3.5-27B-FP8",
+        "[2026-04-01 19:12:52] Running evaluation: dataset=TutorEval, split=test, architecture=single_agent_no_rag, limit=None, examples=834",
+        "[2026-04-01 19:12:52] Dataset supervision profile: {\"total_examples\": 834, \"with_gold_answer\": 834, \"with_rubric\": 834, \"with_images\": 0, \"evaluation_profiles\": {\"tutoreval_key_points\": 834}}"
+      ],
+      "log_line_count": 8,
+      "log_errors": []
+    }
+  ]
+}
