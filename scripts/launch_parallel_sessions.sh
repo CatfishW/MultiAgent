@@ -9,6 +9,7 @@ SPLIT="test"
 LIMIT=""
 OUT_DIR="artifacts/experiments"
 LOG_DIR="logs/experiments"
+PROGRESS_EVERY="10"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -30,6 +31,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --log-dir)
       LOG_DIR="$2"
+      shift 2
+      ;;
+    --progress-every)
+      PROGRESS_EVERY="$2"
       shift 2
       ;;
     *)
@@ -90,6 +95,7 @@ for dataset in "${!DATASET_SOURCES[@]}"; do
       "--source" "$source_path"
       "--split" "$SPLIT"
       "--architecture" "$arch"
+      "--progress-every" "$PROGRESS_EVERY"
       "--out" "$out_json"
     )
 
