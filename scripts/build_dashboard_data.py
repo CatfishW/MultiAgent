@@ -10,6 +10,7 @@ from typing import Any
 
 
 TIMESTAMP_RE = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]")
+PROGRESS_RE = re.compile(r"Progress\s+(?P<completed>\d+)/(?P<total>\d+)\s+\((?P<pct>[^\)]+)\)")
 
 
 def _load_json(path: Path) -> dict[str, Any] | None:
@@ -54,6 +55,19 @@ def _parse_log(path: Path) -> dict[str, Any]:
     summary_line = next((line for line in reversed(lines) if "Summary:" in line), None)
     metric_digest = next((line.split("Metric digest:", 1)[1].strip() for line in reversed(lines) if "Metric digest:" in line), None)
 
+    latest_progress = None
+    for line in reversed(lines):
+        match = PROGRESS_RE.search(line)
+        if not match:
+            continue
+        latest_progress = {
+            "completed": int(match.group("completed")),
+            "total": int(match.group("total")),
+            "pct_text": match.group("pct"),
+            "line": line,
+        }
+        break
+
     supervision_profile = None
     for line in reversed(lines):
         maybe = _extract_json_suffix(line, "Dataset supervision profile:")
@@ -88,6 +102,7 @@ def _parse_log(path: Path) -> dict[str, Any]:
         "error_lines": error_lines[-6:],
         "summary_line": summary_line,
         "metric_digest": metric_digest,
+        "latest_progress": latest_progress,
         "supervision_profile": supervision_profile,
         "line_count": len(lines),
         "timeline": timeline[-12:],
@@ -265,6 +280,7 @@ def main() -> None:
             "duration_s": round(_safe_float(meta.get("duration_s"), 0.0), 3) if meta.get("duration_s") is not None else None,
             "supervision_profile": supervision_profile,
             "result_fresh": result_fresh,
+            "progress": log_info.get("latest_progress"),
             "metric_digest": log_info.get("metric_digest"),
             "log_tail": log_info["tail"],
             "log_timeline": log_info["timeline"],

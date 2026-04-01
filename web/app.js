@@ -96,6 +96,13 @@ function metricLine(label, value, digits = 3) {
   return `${label}: ${value === null || value === undefined ? "-" : fmtNumber(value, digits)}`;
 }
 
+function progressLabel(progress) {
+  if (!progress || progress.total === undefined || progress.total === 0) {
+    return "-";
+  }
+  return `${progress.completed}/${progress.total} (${progress.pct_text || "-"})`;
+}
+
 function renderSessionDetail(session) {
   if (!session) {
     sessionDetail.innerHTML = `<p class="detail-empty">Select a session row to inspect timeline, metrics, and log trace.</p>`;
@@ -106,6 +113,7 @@ function renderSessionDetail(session) {
   const timeline = (session.log_timeline || []).join("\n") || "-";
   const logTail = (session.log_tail || []).join("\n") || "-";
   const errors = (session.log_errors || []).join("\n") || "none";
+  const progress = progressLabel(session.progress);
   const modelText = `text=${session.models?.text || "-"}\nvision=${session.models?.vision || "-"}`;
   const metrics = session.metric_tiles || {};
 
@@ -124,7 +132,7 @@ function renderSessionDetail(session) {
     <div class="detail-grid">
       <article class="detail-block">
         <p class="detail-title">session</p>
-        <p class="detail-mono">${esc(session.session_key)}\nstatus=${esc(session.status)}\nstarted=${esc(session.started_at || "-")}\nended=${esc(session.ended_at || "-")}\nduration_s=${esc(session.duration_s ?? "-")}\nthinking_budget=${esc(session.thinking_budget ?? "-")}</p>
+        <p class="detail-mono">${esc(session.session_key)}\nstatus=${esc(session.status)}\nprogress=${esc(progress)}\nstarted=${esc(session.started_at || "-")}\nended=${esc(session.ended_at || "-")}\nduration_s=${esc(session.duration_s ?? "-")}\nthinking_budget=${esc(session.thinking_budget ?? "-")}</p>
       </article>
       <article class="detail-block">
         <p class="detail-title">models</p>
@@ -165,11 +173,13 @@ function renderSessions(sessions) {
     const rubric = session.summary?.rubric_coverage ?? null;
     const eduAlign = session.summary?.edu_score_alignment ?? null;
     const latencyMs = session.summary?.latency_ms ?? null;
+    const progress = progressLabel(session.progress);
     tr.innerHTML = `
       <td>${esc(session.dataset)}</td>
       <td>${esc(session.architecture)}</td>
       <td><span class="status-pill ${statusClass(session.status)}">${session.status}</span></td>
       <td>${session.records ?? "-"}</td>
+      <td>${esc(progress)}</td>
       <td><span class="score-chip">${fmtNumber(session.score)}</span></td>
       <td>${fmtNumber(tokenF1)}</td>
       <td>${fmtNumber(rubric)}</td>
