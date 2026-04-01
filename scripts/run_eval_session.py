@@ -77,6 +77,16 @@ def _metric_digest(summary: dict[str, Any]) -> str:
     return ", ".join(parts)
 
 
+def _progress_digest(progress: dict[str, Any]) -> str:
+    completed = int(progress.get("completed", 0))
+    total = int(progress.get("total", 0))
+    pct = (100.0 * completed / total) if total else 0.0
+    rolling = progress.get("rolling_summary") if isinstance(progress.get("rolling_summary"), dict) else {}
+    digest = _metric_digest(rolling)
+    latest = str(progress.get("latest_example_id", "-"))
+    return f"Progress {completed}/{total} ({pct:.1f}%) latest={latest} | {digest}"
+
+
 async def _run(args: argparse.Namespace) -> dict[str, Any]:
     started = time.time()
     started_at = time.strftime("%Y-%m-%d %H:%M:%S")
@@ -117,7 +127,16 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
     )
     _log(f"Dataset supervision profile: {json.dumps(profile, ensure_ascii=False)}")
 
-    results = await system.evaluator.evaluate(system, examples, architecture=args.architecture)
+    def _progress_logger(payload: dict[str, Any]) -> None:
+        _log(_progress_digest(payload))
+
+    results = await system.evaluator.evaluate(
+        system,
+        examples,
+        architecture=args.architecture,
+        progress_interval=args.progress_every,
+        progress_hook=_progress_logger,
+    )
     duration_s = round(time.time() - started, 3)
     ended_at = time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -159,6 +178,7 @@ async def main() -> None:
     parser.add_argument("--corpus", default=None, help="Optional corpus path used to build retrieval index.")
     parser.add_argument("--index-path", default=None, help="Optional path to a prebuilt HybridIndex pickle file.")
     parser.add_argument("--index-out", default=None, help="Optional directory to save the built retrieval index.")
+    parser.add_argument("--progress-every", type=int, default=25, help="Emit rolling metric logs every N evaluated examples.")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 
