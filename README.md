@@ -85,7 +85,7 @@ python scripts/prepare_datasets.py --config configs/system.example.yaml --datase
 ### 6) Run logged evaluation session
 
 ```bash
-python scripts/run_eval_session.py ScienceQA --config configs/system.example.yaml --split test --limit 50 --out artifacts/eval_session_scienceqa.json
+python scripts/run_eval_session.py ScienceQA --config configs/system.example.yaml --split test --limit 50 --out artifacts/scienceqa_eval_session.json
 ```
 
 ### 7) Launch parallel architecture experiments
