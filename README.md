@@ -73,7 +73,7 @@ python scripts/demo_local_endpoints.py "Explain photosynthesis with evidence." -
 ### 4) Run benchmark
 
 ```bash
-python scripts/run_benchmark.py ScienceQA --config configs/system.example.yaml --split test --limit 20 --out artifacts/benchmark_results.json
+python scripts/run_benchmark.py ScienceQA --config configs/system.example.yaml --split test --limit 20 --out artifacts/scienceqa_results.json
 ```
 
 ### 5) Prepare local dataset exports
