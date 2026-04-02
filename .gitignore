@@ -14,4 +14,6 @@ logs/
 data/
 !web/data/
 !web/data/session_summary.json
+!EduBench/data/
+!TutorEval/
 src/eduagentic_swarm.egg-info/
