@@ -1,0 +1,135 @@
+% IEEE SMC 2026 style result tables
+% Snapshot source: latex_tables_metrics_/frozen_metrics_snapshot.jsonl
+% Snapshot timestamp: 2026-04-12 21:18:44 EDT
+
+\begin{table*}[t]
+\caption{Run-completion status at freeze time. EduBench sessions are still active; TutorEval sessions are converged.}
+\label{tab:run_completion_snapshot}
+\centering
+\footnotesize
+\begin{tabular}{llrrrrrr}
+\toprule
+Dataset & Architecture & Success & Processed & Total & Coverage (\%) & Pending & Failed \\
+\midrule
+EduBench & classical\_rag & 682 & 682 & 16956 & 4.02 & 16274 & 0 \\
+EduBench & hybrid\_fast & 2254 & 2257 & 16956 & 13.31 & 14699 & 3 \\
+EduBench & non\_rag\_multi\_agent & 2104 & 2106 & 16956 & 12.42 & 14850 & 2 \\
+EduBench & single\_agent\_no\_rag & 1338 & 1344 & 16956 & 7.93 & 15612 & 6 \\
+TutorEval & classical\_rag & 834 & 834 & 834 & 100.00 & 0 & 0 \\
+TutorEval & hybrid\_fast & 834 & 834 & 834 & 100.00 & 0 & 0 \\
+TutorEval & non\_rag\_multi\_agent & 834 & 834 & 834 & 100.00 & 0 & 0 \\
+TutorEval & single\_agent\_no\_rag & 834 & 834 & 834 & 100.00 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\caption{EduBench primary quality-efficiency summary from the frozen snapshot. Exact Match, Token-F1, and choice accuracy are structurally 0.0 in this profile.}
+\label{tab:edubench_summary}
+\centering
+\footnotesize
+\begin{tabular}{lrrrrrrrrr}
+\toprule
+Architecture & Grounded & Rubric & Edu JSON & Edu Align & Latency (ms) & Total Tokens & LLM Calls & Retrieval Q & Complexity \\
+\midrule
+classical\_rag & \textbf{0.3384} & 0.7987 & 0.0039 & \textbf{0.2419} & 48170.2 & 3871.4 & 1.965 & 1.0 & 5141.2 \\
+hybrid\_fast & 0.0000 & \textbf{0.9553} & 0.0034 & 0.0302 & \textbf{29950.7} & \textbf{1757.8} & \textbf{1.269} & 3.0 & \textbf{3437.8} \\
+non\_rag\_multi\_agent & 0.0000 & 0.9541 & 0.0049 & 0.0347 & 32327.2 & 1790.7 & 1.289 & 3.0 & 3500.7 \\
+single\_agent\_no\_rag & 0.0000 & 0.7345 & \textbf{0.0209} & 0.0933 & 50282.8 & 3041.5 & 1.994 & 0.0 & 3521.5 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\caption{TutorEval primary summary metrics. Hybrid Fast is the strongest aggregate point on overlap, rubric adherence, keypoint recall, and efficiency.}
+\label{tab:tutoreval_summary}
+\centering
+\footnotesize
+\begin{tabular}{lrrrrrrrr}
+\toprule
+Architecture & Token-F1 & Grounded & Rubric & KeyPrec & KeyRec & ChapterGround & Latency (ms) & Total Tokens \\
+\midrule
+classical\_rag & 0.1115 & 0.2812 & 0.9773 & \textbf{0.1134} & 0.8901 & 0.1057 & 51903.1 & 3974.7 \\
+hybrid\_fast & \textbf{0.1152} & \textbf{0.2953} & \textbf{0.9902} & 0.1128 & \textbf{0.8974} & 0.1101 & \textbf{49113.4} & \textbf{3490.3} \\
+non\_rag\_multi\_agent & 0.0898 & 0.0000 & 0.9810 & 0.0999 & 0.8672 & \textbf{0.1445} & 51048.0 & 5959.3 \\
+single\_agent\_no\_rag & 0.0865 & 0.0000 & 0.9688 & 0.0997 & 0.8423 & 0.1411 & 55257.3 & 6466.2 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\caption{EduBench metric inventory (all profile and non-profile metrics in the summary schema).}
+\label{tab:edubench_metric_inventory}
+\centering
+\footnotesize
+\begin{tabular}{lrrrr}
+\toprule
+Metric & classical\_rag & hybrid\_fast & non\_rag\_multi\_agent & single\_agent\_no\_rag \\
+\midrule
+exact\_match & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+token\_f1 & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+choice\_accuracy & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+citation\_coverage & 1.0000 & 1.0000 & 1.0000 & 1.0000 \\
+retrieval\_doc\_recall & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+grounded\_overlap & 0.3384 & 0.0000 & 0.0000 & 0.0000 \\
+rubric\_coverage & 0.7987 & 0.9553 & 0.9541 & 0.7345 \\
+adaptivity & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+supervision\_available & 1.0000 & 1.0000 & 1.0000 & 1.0000 \\
+edu\_json\_compliance & 0.0039 & 0.0034 & 0.0049 & 0.0209 \\
+edu\_score\_alignment & 0.2419 & 0.0302 & 0.0347 & 0.0933 \\
+tutoreval\_keypoint\_precision & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+tutoreval\_keypoint\_recall & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+tutoreval\_chapter\_grounding & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\caption{TutorEval metric inventory (all profile and non-profile metrics in the summary schema).}
+\label{tab:tutoreval_metric_inventory}
+\centering
+\footnotesize
+\begin{tabular}{lrrrr}
+\toprule
+Metric & classical\_rag & hybrid\_fast & non\_rag\_multi\_agent & single\_agent\_no\_rag \\
+\midrule
+exact\_match & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+token\_f1 & 0.1115 & 0.1152 & 0.0898 & 0.0865 \\
+choice\_accuracy & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+citation\_coverage & 1.0000 & 1.0000 & 1.0000 & 1.0000 \\
+retrieval\_doc\_recall & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+grounded\_overlap & 0.2812 & 0.2953 & 0.0000 & 0.0000 \\
+rubric\_coverage & 0.9773 & 0.9902 & 0.9810 & 0.9688 \\
+adaptivity & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+supervision\_available & 1.0000 & 1.0000 & 1.0000 & 1.0000 \\
+edu\_json\_compliance & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+edu\_score\_alignment & 0.0000 & 0.0000 & 0.0000 & 0.0000 \\
+tutoreval\_keypoint\_precision & 0.1134 & 0.1128 & 0.0999 & 0.0997 \\
+tutoreval\_keypoint\_recall & 0.8901 & 0.8974 & 0.8672 & 0.8423 \\
+tutoreval\_chapter\_grounding & 0.1057 & 0.1101 & 0.1445 & 0.1411 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\begin{table*}[t]
+\caption{Runtime and complexity decomposition. Reported complexity-per-second is the run summary mean; recomputed complexity-per-second is $\text{complexity\_units}/(\text{latency\_ms}/1000)$ from summary means.}
+\label{tab:efficiency_decomposition}
+\centering
+\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llrrrrrrrr}
+\toprule
+Dataset & Architecture & LLM Calls & Retrieval Q & API Time (ms) & Non-API Time (ms) & API Ratio & Complexity & Comp/s (reported) & Comp/s (recomputed) \\
+\midrule
+EduBench & classical\_rag & 1.965 & 1.0 & 52595.3 & 2153.0 & 5.48 & 5141.2 & 929.3 & 106.7 \\
+EduBench & hybrid\_fast & 1.269 & 3.0 & 34401.1 & 2195.6 & 0.89 & 3437.8 & 390310.9 & 114.8 \\
+EduBench & non\_rag\_multi\_agent & 1.289 & 3.0 & 35613.4 & 2676.8 & 9.29 & 3500.7 & 391206.0 & 108.3 \\
+EduBench & single\_agent\_no\_rag & 1.994 & 0.0 & 50401.9 & 3716.7 & 1.09 & 3521.5 & 76600.8 & 70.0 \\
+TutorEval & classical\_rag & 1.836 & 1.0 & 52235.0 & 3456.7 & 5.67 & 5242.7 & 366.2 & 101.0 \\
+TutorEval & hybrid\_fast & 1.559 & 6.0 & 47477.5 & 3595.2 & 1.80 & 6279.0 & 208.7 & 127.8 \\
+TutorEval & non\_rag\_multi\_agent & 1.674 & 3.0 & 49000.4 & 4750.9 & 1.07 & 7669.3 & 23352.2 & 150.2 \\
+TutorEval & single\_agent\_no\_rag & 1.995 & 0.0 & 55730.3 & 3788.0 & 1.14 & 6946.2 & 45480.5 & 125.7 \\
+\bottomrule
+\end{tabular}
+}
+\end{table*}
