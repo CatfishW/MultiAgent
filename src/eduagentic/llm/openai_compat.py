@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import asdict
 from pathlib import Path
+import random
 from typing import Any
 import base64
 import time
@@ -40,11 +42,17 @@ class OpenAICompatClient:
         timeout_s: float = 120.0,
         cache_dir: str | None = None,
         chat_path: str = "chat/completions",
+        request_retries: int = 7,
+        retry_base_s: float = 1.0,
+        retry_max_s: float = 30.0,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout_s = timeout_s
         self.chat_path = chat_path.lstrip("/")
+        self.request_retries = max(1, int(request_retries))
+        self.retry_base_s = max(0.0, float(retry_base_s))
+        self.retry_max_s = max(self.retry_base_s, float(retry_max_s))
         self.memory_cache = LRUCache(max_size=1024, ttl_s=60 * 60)
         self.disk_cache = JsonDiskCache(cache_dir) if cache_dir else None
 
@@ -139,16 +147,32 @@ class OpenAICompatClient:
                     self.memory_cache.set(cache_key, disk_hit)
                     return ModelResponse(**disk_hit)
 
-        started = time.perf_counter()
-        async with httpx.AsyncClient(timeout=self.timeout_s) as client:
-            response = await client.post(
-                f"{self.base_url}/{self.chat_path}",
-                headers=self._headers(),
-                json=payload,
-            )
-            response.raise_for_status()
-            raw = response.json()
-        latency_ms = int((time.perf_counter() - started) * 1000)
+        raw: dict[str, Any] | None = None
+        latency_ms = 0
+        for attempt in range(1, self.request_retries + 1):
+            try:
+                started = time.perf_counter()
+                async with httpx.AsyncClient(timeout=self.timeout_s) as client:
+                    response = await client.post(
+                        f"{self.base_url}/{self.chat_path}",
+                        headers=self._headers(),
+                        json=payload,
+                    )
+                    response.raise_for_status()
+                    raw = response.json()
+                latency_ms = int((time.perf_counter() - started) * 1000)
+                break
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                if not self._should_retry(exc) or attempt >= self.request_retries:
+                    raise
+                delay_s = self._retry_delay_s(exc, attempt)
+                if delay_s > 0:
+                    await asyncio.sleep(delay_s)
+
+        if raw is None:
+            raise RuntimeError("Model response was empty after retries")
 
         text = self._extract_text(raw)
         usage = raw.get("usage", {}) if isinstance(raw, dict) else {}
@@ -159,13 +183,40 @@ class OpenAICompatClient:
             self.disk_cache.set(cache_key, serializable)
         return result
 
+    def _should_retry(self, exc: Exception) -> bool:
+        if isinstance(exc, httpx.HTTPStatusError):
+            status = exc.response.status_code
+            return status in {408, 409, 425, 429, 500, 502, 503, 504}
+        if isinstance(exc, (httpx.TimeoutException, httpx.TransportError, httpx.NetworkError)):
+            return True
+        return False
+
+    def _retry_delay_s(self, exc: Exception, attempt: int) -> float:
+        if isinstance(exc, httpx.HTTPStatusError):
+            retry_after = exc.response.headers.get("Retry-After")
+            if retry_after:
+                try:
+                    parsed = float(retry_after)
+                    if parsed >= 0:
+                        return min(parsed, self.retry_max_s)
+                except Exception:
+                    pass
+
+        base = self.retry_base_s * (2 ** max(0, attempt - 1))
+        capped = min(base, self.retry_max_s)
+        jitter = random.uniform(0.0, min(1.0, capped * 0.25))
+        return max(0.0, capped + jitter)
+
     def _extract_text(self, payload: dict[str, Any]) -> str:
         if not isinstance(payload, dict):
             return str(payload)
+        
+        # Try choices[0].message
         if isinstance(payload.get("choices"), list) and payload["choices"]:
             choice = payload["choices"][0]
             message = choice.get("message", {})
             content = message.get("content")
+            
             if isinstance(content, str):
                 return content
             if isinstance(content, dict):
@@ -182,11 +233,15 @@ class OpenAICompatClient:
                             parts.append(item["content"])
                 if parts:
                     return "\n".join(parts)
+                    
+            # Fallback to reasoning_content if content is null or undetectable
             reasoning_content = message.get("reasoning_content")
             if isinstance(reasoning_content, str) and reasoning_content.strip():
                 return reasoning_content
+                
             if isinstance(choice.get("text"), str):
                 return choice["text"]
+
         output_text = payload.get("output_text")
         if isinstance(output_text, str):
             return output_text
@@ -194,4 +249,6 @@ class OpenAICompatClient:
             return payload["content"]
         if isinstance(payload.get("text"), str):
             return payload["text"]
+            
+        # Fall back to a string representation when no standard text field exists.
         return str(payload)

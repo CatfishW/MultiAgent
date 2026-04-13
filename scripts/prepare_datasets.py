@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 from dataclasses import asdict, is_dataclass
 from pathlib import Path
 from typing import Any
@@ -253,7 +254,7 @@ def main() -> None:
     parser.add_argument("--datasets", nargs="+", default=["EduBench", "TutorEval"])
     parser.add_argument("--split", default="test")
     parser.add_argument("--limit", type=int, default=None)
-    parser.add_argument("--out-dir", default="data")
+    parser.add_argument("--out-dir", default="data/processed")
     parser.add_argument(
         "--source",
         action="append",
@@ -289,6 +290,11 @@ def main() -> None:
             for example in examples:
                 ex_fh.write(json.dumps(_example_to_row(example), ensure_ascii=False) + "\n")
                 corpus_rows.extend(_extract_corpus_rows(example))
+
+        # Keep a stable requested-split alias for experiment configs.
+        requested_path = dataset_dir / f"{args.split}.jsonl"
+        if requested_path != examples_path:
+            shutil.copyfile(examples_path, requested_path)
 
         dedup: dict[str, dict[str, Any]] = {}
         for row in corpus_rows:

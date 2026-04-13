@@ -23,7 +23,7 @@ datasets:
   registry_overrides:
     MathTutorBench:
       default_loader: local_jsonl
-      default_source: data/mathtutorbench/test.jsonl
+      default_source: data/processed/mathtutorbench/test.jsonl
     BEIR:
       default_loader: local_jsonl
-      default_source: data/beir/normalized_test.jsonl
+      default_source: data/processed/beir/normalized_test.jsonl

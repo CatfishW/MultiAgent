@@ -57,3 +57,7 @@ async def test_hybrid_pipeline_smoke():
     assert "FAKE_ANSWER" in response.answer
     assert response.retrieved_chunks
     assert response.metrics["agent_count"] >= 3
+    assert response.metrics["api_time_ms"] > 0
+    assert response.metrics["llm_call_count"] >= 1
+    assert response.metrics["total_tokens"] >= 15
+    assert response.metrics["complexity_units"] > 0

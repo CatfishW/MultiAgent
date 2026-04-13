@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 from ..core.contracts import AgentResult
 from ..retrieval.packer import ContextPacker
 from .base import AgentContext, BaseAgent
@@ -9,8 +11,15 @@ class RetrieverAgent(BaseAgent):
     role_name = "retriever"
 
     async def run(self, context: AgentContext) -> AgentResult:
+        started = time.perf_counter()
         if self.deps.retriever is None:
-            return AgentResult(role=self.role_name, text="retrieval disabled", confidence=0.0)
+            return AgentResult(
+                role=self.role_name,
+                text="retrieval disabled",
+                confidence=0.0,
+                artifacts={"chunks": [], "queries": [], "query_count": 0},
+                latency_ms=0,
+            )
         queries = context.search_queries or [context.example.question]
         merged = []
         for query in queries[: context.budget.max_retrieval_queries]:
@@ -28,10 +37,12 @@ class RetrieverAgent(BaseAgent):
         selected = packer.select(context.example.question, ranked, final_k=min(context.budget.max_tool_calls, 6))
         rendered = packer.render_context(selected)
         citations = [item.doc_id for item in selected]
+        elapsed_ms = int((time.perf_counter() - started) * 1000)
         return AgentResult(
             role=self.role_name,
             text=rendered,
             confidence=0.84 if selected else 0.25,
             citations=citations,
-            artifacts={"chunks": selected, "queries": queries},
+            artifacts={"chunks": selected, "queries": queries, "query_count": len(queries)},
+            latency_ms=elapsed_ms,
         )

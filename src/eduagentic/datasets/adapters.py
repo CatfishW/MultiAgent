@@ -259,6 +259,40 @@ def tutoreval_transform(row: dict[str, Any], spec: DatasetSpec) -> BenchmarkExam
             example.gold_answer = " ".join(key_points)
         metadata["tutoreval_key_points"] = key_points
 
+    def _to_bool(value: Any) -> bool | None:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            lowered = value.strip().lower()
+            if lowered in {"true", "1", "yes", "y"}:
+                return True
+            if lowered in {"false", "0", "no", "n"}:
+                return False
+        return None
+
+    for key in ["answer_in_chapter", "closed_book", "misleading_question"]:
+        value = _first_present(row, key)
+        if value is None:
+            value = _first_present(nested, key)
+        parsed = _to_bool(value)
+        if parsed is not None:
+            metadata[f"tutoreval_{key}"] = parsed
+            metadata[key] = parsed
+
+    difficulty = _first_present(row, "difficulty")
+    if difficulty is None:
+        difficulty = _first_present(nested, "difficulty")
+    if difficulty is not None:
+        metadata["tutoreval_difficulty"] = str(difficulty)
+
+    domain = _first_present(row, "domain")
+    if domain is None:
+        domain = _first_present(nested, "domain")
+    if domain is not None:
+        metadata["tutoreval_domain"] = str(domain)
+
     metadata["evaluation_profile"] = "tutoreval_key_points"
     example.metadata = metadata
     return example

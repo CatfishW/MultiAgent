@@ -5,7 +5,8 @@ endpoints:
     supports_vision: true
     api_key_env: null
     default_model: /home/tang/Models/Qwen3.5-4B
-    timeout_s: 120
+    timeout_s: 300
+    max_retries: 2
     chat_extra:
       extra_body:
         thinking_budget: 64
@@ -14,7 +15,8 @@ endpoints:
     capability: multimodal
     api_key_env: null
     default_model: Qwen/Qwen3.5-27B-FP8
-    timeout_s: 120
+    timeout_s: 300
+    max_retries: 2
 
 pipeline:
   default_architecture: hybrid_fast
@@ -44,10 +46,10 @@ datasets:
   registry_overrides:
     EduBench:
       default_loader: local_jsonl
-      default_source: data/edubench/test.jsonl
+      default_source: data/processed/edubench/test.jsonl
     TutorEval:
       default_loader: local_jsonl
-      default_source: data/tutoreval/test.jsonl
+      default_source: data/processed/tutoreval/test.jsonl
 
 budget:
   max_latency_ms: 12000

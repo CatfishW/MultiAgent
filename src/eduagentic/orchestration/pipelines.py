@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 import time
+from typing import Any
 
 from ..agents import AgentContext, AgentDependencies, CriticAgent, DiagnoserAgent, PlannerAgent, RetrieverAgent, RubricAgent, TutorAgent
 from ..config import AppConfig
@@ -40,6 +41,26 @@ class BasePipeline:
     def _record(self, trace: list[TraceEvent], kind: str, **payload) -> None:
         trace.append(TraceEvent(kind=kind, payload=payload))
 
+    def _safe_float(self, value: Any, default: float = 0.0) -> float:
+        try:
+            return float(value)
+        except Exception:
+            return default
+
+    def _usage_token_counts(self, usage: dict[str, Any]) -> tuple[float, float, float]:
+        prompt_tokens = self._safe_float(
+            usage.get("prompt_tokens", usage.get("input_tokens", usage.get("prompt_token_count", 0.0))),
+            0.0,
+        )
+        completion_tokens = self._safe_float(
+            usage.get("completion_tokens", usage.get("output_tokens", usage.get("completion_token_count", 0.0))),
+            0.0,
+        )
+        total_tokens = self._safe_float(usage.get("total_tokens", usage.get("total_token_count", 0.0)), 0.0)
+        if total_tokens <= 0:
+            total_tokens = prompt_tokens + completion_tokens
+        return prompt_tokens, completion_tokens, total_tokens
+
     def _finalize(
         self,
         *,
@@ -51,10 +72,63 @@ class BasePipeline:
         trace: list[TraceEvent],
         started: float,
     ) -> PipelineResponse:
+        total_latency_ms = float(int((time.perf_counter() - started) * 1000))
+        llm_call_count = 0.0
+        prompt_tokens = 0.0
+        completion_tokens = 0.0
+        total_tokens = 0.0
+        api_time_ms = 0.0
+        agent_time_ms = 0.0
+        retrieval_query_count = 0.0
+
+        for output in agent_outputs.values():
+            if output.latency_ms is not None:
+                agent_time_ms += max(0.0, self._safe_float(output.latency_ms, 0.0))
+
+            artifacts = output.artifacts if isinstance(output.artifacts, dict) else {}
+            usage = artifacts.get("usage")
+            if isinstance(usage, dict):
+                llm_call_count += 1.0
+                if output.latency_ms is not None:
+                    api_time_ms += max(0.0, self._safe_float(output.latency_ms, 0.0))
+                p_tokens, c_tokens, t_tokens = self._usage_token_counts(usage)
+                prompt_tokens += p_tokens
+                completion_tokens += c_tokens
+                total_tokens += t_tokens
+
+            queries = artifacts.get("queries")
+            if isinstance(queries, list):
+                retrieval_query_count += float(len([query for query in queries if str(query).strip()]))
+
+        retrieved_chunk_count = float(len(retrieved_chunks))
+        trace_event_count = float(len(trace))
+        complexity_units = (
+            total_tokens
+            + (retrieval_query_count * 160.0)
+            + (retrieved_chunk_count * 90.0)
+            + (float(len(agent_outputs)) * 240.0)
+            + (trace_event_count * 30.0)
+        )
+        non_api_time_ms = max(0.0, total_latency_ms - api_time_ms)
+        api_time_ratio = (api_time_ms / total_latency_ms) if total_latency_ms > 0 else 0.0
+        complexity_per_second = complexity_units / max(0.001, total_latency_ms / 1000.0)
+
         metrics = {
-            "latency_ms": int((time.perf_counter() - started) * 1000),
-            "retrieved_chunks": float(len(retrieved_chunks)),
+            "latency_ms": total_latency_ms,
+            "api_time_ms": api_time_ms,
+            "non_api_time_ms": non_api_time_ms,
+            "api_time_ratio": api_time_ratio,
+            "agent_time_ms": agent_time_ms,
             "agent_count": float(len(agent_outputs)),
+            "llm_call_count": llm_call_count,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "retrieval_query_count": retrieval_query_count,
+            "retrieved_chunks": retrieved_chunk_count,
+            "trace_event_count": trace_event_count,
+            "complexity_units": complexity_units,
+            "complexity_per_second": complexity_per_second,
         }
         citations = []
         for output in agent_outputs.values():

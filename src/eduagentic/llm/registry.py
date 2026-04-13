@@ -53,6 +53,7 @@ class ModelRegistry:
             base_url=endpoint.base_url,
             api_key=endpoint.api_key,
             timeout_s=endpoint.timeout_s,
+            request_retries=max(1, int(endpoint.max_retries)),
             cache_dir=str(Path(self.config.pipeline.cache_dir) / endpoint.name),
         )
 

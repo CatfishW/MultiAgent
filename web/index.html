@@ -20,7 +20,14 @@
       <p class="hero-subtitle">Neo-brutalist monitor for EduBench + TutorEval runs across multi-agent, RAG, and no-RAG baselines.</p>
       <div class="hero-actions">
         <button id="refreshButton" class="sketch-btn" type="button">Refresh Now</button>
-        <p id="snapshotTime" class="snapshot-time">snapshot: -- • auto-refresh 15s</p>
+        <p id="snapshotTime" class="snapshot-time">snapshot: -- • websocket 1s stream</p>
+        <p id="liveIndicator" class="live-indicator live-unknown">live: --</p>
+        <div class="run-progress" aria-live="polite">
+          <p id="overallProgressLabel" class="run-progress-label">overall progress: --</p>
+          <div class="run-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+            <span id="overallProgressFill" class="run-progress-fill" style="width: 0%"></span>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -49,18 +56,28 @@
                 <th>Dataset</th>
                 <th>Architecture</th>
                 <th>Status</th>
-                <th>Records</th>
+                <th>Processed</th>
                 <th>Progress</th>
                 <th>Composite</th>
                 <th>Token F1</th>
+                <th>KeyPt R</th>
                 <th>Rubric</th>
                 <th>Edu Align</th>
                 <th>Latency (ms)</th>
+                <th>API (ms)</th>
+                <th>Complexity</th>
+                <th>Tokens</th>
               </tr>
             </thead>
             <tbody id="sessionsBody"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="card card-metric-guide reveal" aria-labelledby="metric-guide-title">
+        <h2 id="metric-guide-title">Metric Guide</h2>
+        <p class="metric-guide-sub">Each metric can be expanded or hidden for quick interpretation.</p>
+        <div id="metricGuidePanel" class="metric-guide-grid"></div>
       </section>
 
       <section class="card card-details reveal" aria-labelledby="detail-title">

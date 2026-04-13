@@ -7,9 +7,20 @@ cd "$ROOT_DIR"
 CONFIG="configs/system.experiments.yaml"
 SPLIT="test"
 LIMIT=""
-OUT_DIR="artifacts/experiments"
-LOG_DIR="logs/experiments"
+OUT_ROOT="artifacts/experiments"
+RESULTS_DIR="artifacts/experiments/results"
+INDEX_ROOT="artifacts/experiments/indexes"
+LOG_DIR="logs/experiments/sessions"
 PROGRESS_EVERY="10"
+SESSION_RETRIES="6"
+SESSION_RETRY_SLEEP="30"
+EXAMPLE_RETRIES="6"
+EXAMPLE_5XX_RETRIES="2"
+EXAMPLE_RETRY_BASE="2.0"
+EXAMPLE_RETRY_MAX="45.0"
+CHECKPOINT_EVERY="25"
+RESUME_MODE="1"
+RESUME_ON_RETRY="1"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -26,7 +37,19 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     --out-dir)
-      OUT_DIR="$2"
+      OUT_ROOT="$2"
+      shift 2
+      ;;
+    --out-root)
+      OUT_ROOT="$2"
+      shift 2
+      ;;
+    --results-dir)
+      RESULTS_DIR="$2"
+      shift 2
+      ;;
+    --index-root)
+      INDEX_ROOT="$2"
       shift 2
       ;;
     --log-dir)
@@ -37,6 +60,50 @@ while [[ $# -gt 0 ]]; do
       PROGRESS_EVERY="$2"
       shift 2
       ;;
+    --session-retries)
+      SESSION_RETRIES="$2"
+      shift 2
+      ;;
+    --session-retry-sleep)
+      SESSION_RETRY_SLEEP="$2"
+      shift 2
+      ;;
+    --example-retries)
+      EXAMPLE_RETRIES="$2"
+      shift 2
+      ;;
+    --example-5xx-retries)
+      EXAMPLE_5XX_RETRIES="$2"
+      shift 2
+      ;;
+    --example-retry-base)
+      EXAMPLE_RETRY_BASE="$2"
+      shift 2
+      ;;
+    --example-retry-max)
+      EXAMPLE_RETRY_MAX="$2"
+      shift 2
+      ;;
+    --checkpoint-every)
+      CHECKPOINT_EVERY="$2"
+      shift 2
+      ;;
+    --no-resume)
+      RESUME_MODE="0"
+      shift
+      ;;
+    --resume)
+      RESUME_MODE="1"
+      shift
+      ;;
+    --no-resume-on-retry)
+      RESUME_ON_RETRY="0"
+      shift
+      ;;
+    --resume-on-retry)
+      RESUME_ON_RETRY="1"
+      shift
+      ;;
     *)
       echo "Unknown argument: $1" >&2
       exit 2
@@ -44,7 +111,20 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-mkdir -p "$OUT_DIR" "$LOG_DIR"
+if [[ "$RESULTS_DIR" == "artifacts/experiments/results" ]]; then
+  RESULTS_DIR="$OUT_ROOT/results"
+fi
+if [[ "$INDEX_ROOT" == "artifacts/experiments/indexes" ]]; then
+  INDEX_ROOT="$OUT_ROOT/indexes"
+fi
+
+mkdir -p "$RESULTS_DIR" "$INDEX_ROOT" "$LOG_DIR"
+
+RUNNER_SCRIPT="scripts/run_session_with_retry.sh"
+if [[ ! -f "$RUNNER_SCRIPT" ]]; then
+  echo "Missing runner script: $RUNNER_SCRIPT" >&2
+  exit 1
+fi
 
 if ! command -v screen >/dev/null 2>&1; then
   echo "screen is not installed. Install it first (e.g., sudo apt install screen)." >&2
@@ -52,11 +132,21 @@ if ! command -v screen >/dev/null 2>&1; then
 fi
 
 declare -A DATASET_SOURCES=(
+  [EduBench]="data/processed/edubench/${SPLIT}.jsonl"
+  [TutorEval]="data/processed/tutoreval/${SPLIT}.jsonl"
+)
+
+declare -A DATASET_CORPUS=(
+  [EduBench]="data/processed/edubench/corpus.jsonl"
+  [TutorEval]="data/processed/tutoreval/corpus.jsonl"
+)
+
+declare -A LEGACY_DATASET_SOURCES=(
   [EduBench]="data/edubench/${SPLIT}.jsonl"
   [TutorEval]="data/tutoreval/${SPLIT}.jsonl"
 )
 
-declare -A DATASET_CORPUS=(
+declare -A LEGACY_DATASET_CORPUS=(
   [EduBench]="data/edubench/corpus.jsonl"
   [TutorEval]="data/tutoreval/corpus.jsonl"
 )
@@ -71,7 +161,14 @@ ARCHS=(
 for dataset in "${!DATASET_SOURCES[@]}"; do
   source_path="${DATASET_SOURCES[$dataset]}"
   corpus_path="${DATASET_CORPUS[$dataset]}"
-  index_dir="$OUT_DIR/index_${dataset,,}"
+  if [[ ! -f "$source_path" && -f "${LEGACY_DATASET_SOURCES[$dataset]}" ]]; then
+    source_path="${LEGACY_DATASET_SOURCES[$dataset]}"
+  fi
+  if [[ ! -f "$corpus_path" && -f "${LEGACY_DATASET_CORPUS[$dataset]}" ]]; then
+    corpus_path="${LEGACY_DATASET_CORPUS[$dataset]}"
+  fi
+
+  index_dir="$INDEX_ROOT/${dataset,,}"
   index_file="$index_dir/hybrid_index.pkl"
 
   if [[ ! -f "$source_path" ]]; then
@@ -86,7 +183,7 @@ for dataset in "${!DATASET_SOURCES[@]}"; do
 
   for arch in "${ARCHS[@]}"; do
     session="exp_${dataset,,}_${arch}"
-    out_json="$OUT_DIR/${dataset,,}_${arch}.json"
+    out_json="$RESULTS_DIR/${dataset,,}_${arch}.json"
     log_file="$LOG_DIR/${session}.log"
 
     extra_args=(
@@ -96,8 +193,19 @@ for dataset in "${!DATASET_SOURCES[@]}"; do
       "--split" "$SPLIT"
       "--architecture" "$arch"
       "--progress-every" "$PROGRESS_EVERY"
+      "--max-example-retries" "$EXAMPLE_RETRIES"
+      "--max-5xx-retries" "$EXAMPLE_5XX_RETRIES"
+      "--retry-backoff-base" "$EXAMPLE_RETRY_BASE"
+      "--retry-backoff-max" "$EXAMPLE_RETRY_MAX"
+        "--checkpoint-every" "$CHECKPOINT_EVERY"
       "--out" "$out_json"
     )
+
+    if [[ "$RESUME_MODE" == "1" ]]; then
+      extra_args+=("--resume")
+    else
+      extra_args+=("--no-resume")
+    fi
 
     if [[ -n "$LIMIT" ]]; then
       extra_args+=("--limit" "$LIMIT")
@@ -112,7 +220,27 @@ for dataset in "${!DATASET_SOURCES[@]}"; do
       fi
     fi
 
-    cmd="cd '$ROOT_DIR' && set -o pipefail && .venv/bin/python scripts/run_eval_session.py ${extra_args[*]} 2>&1 | tee '$log_file'"
+    run_cmd=(
+      ".venv/bin/python"
+      "scripts/run_eval_session.py"
+      "${extra_args[@]}"
+    )
+
+    wrapper_cmd=(
+      "bash"
+      "$RUNNER_SCRIPT"
+      "--session-name" "$session"
+      "--log-file" "$log_file"
+      "--max-attempts" "$SESSION_RETRIES"
+      "--sleep-seconds" "$SESSION_RETRY_SLEEP"
+    )
+    if [[ "$RESUME_ON_RETRY" == "1" ]]; then
+      wrapper_cmd+=("--resume-on-retry")
+    fi
+    wrapper_cmd+=("--")
+    wrapper_cmd+=("${run_cmd[@]}")
+    printf -v wrapper_cmd_quoted '%q ' "${wrapper_cmd[@]}"
+    cmd="cd '$ROOT_DIR' && set -o pipefail && ${wrapper_cmd_quoted}"
 
     if screen -list | grep -q "\\.${session}[[:space:]]"; then
       echo "Session already exists, skipping: $session"

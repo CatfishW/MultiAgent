@@ -3,16 +3,16 @@
 registry_overrides:
   EduBench:
     default_loader: local_jsonl
-    default_source: data/edubench/test.jsonl
+    default_source: data/processed/edubench/test.jsonl
   TutorEval:
     default_loader: local_jsonl
-    default_source: data/tutoreval/test.jsonl
+    default_source: data/processed/tutoreval/test.jsonl
   MathTutorBench:
     default_loader: local_jsonl
-    default_source: data/mathtutorbench/test.jsonl
+    default_source: data/processed/mathtutorbench/test.jsonl
   AgentBench:
     default_loader: local_jsonl
-    default_source: data/agentbench/test.jsonl
+    default_source: data/processed/agentbench/test.jsonl
   BEIR:
     default_loader: local_jsonl
-    default_source: data/beir/normalized_test.jsonl
+    default_source: data/processed/beir/normalized_test.jsonl

@@ -69,6 +69,35 @@ h1 {
   flex-wrap: wrap;
 }
 
+.run-progress {
+  min-width: min(420px, 100%);
+  flex: 1 1 320px;
+}
+
+.run-progress-label {
+  margin: 0 0 0.22rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+.run-progress-track {
+  width: 100%;
+  border: 2px solid var(--ink);
+  background: #fff;
+  height: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.run-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffb04a 0%, #ff6a3d 100%);
+  transition: width 0.3s ease;
+}
+
 .snapshot-time {
   margin: 0;
   font-size: 0.82rem;
@@ -76,6 +105,33 @@ h1 {
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
   color: #3f372c;
+}
+
+.live-indicator {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+  border: 2px solid var(--ink);
+  background: #fff;
+  padding: 0.18rem 0.48rem;
+}
+
+.live-fresh {
+  background: #dff8df;
+}
+
+.live-warm {
+  background: #fff3cc;
+}
+
+.live-stale {
+  background: #ffd8d8;
+}
+
+.live-unknown {
+  background: #ececec;
 }
 
 .sketch-btn {
@@ -87,6 +143,17 @@ h1 {
   font-weight: 800;
   cursor: pointer;
   transform: rotate(-1.1deg);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sketch-btn:hover {
+  transform: rotate(0deg) scale(1.02);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.sketch-btn:active {
+  transform: rotate(1deg) scale(0.96);
+  box-shadow: 2px 2px 0 var(--ink);
 }
 
 .board {
@@ -136,6 +203,11 @@ h1 {
   background: linear-gradient(160deg, #eef9ff 0%, #ddeef9 100%);
 }
 
+.card-metric-guide {
+  grid-column: span 12;
+  background: linear-gradient(160deg, #fff7e8 0%, #e9f7ff 100%);
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -147,6 +219,12 @@ h1 {
   background: #fff;
   padding: 0.5rem;
   min-height: 74px;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.stat-tile:hover {
+  transform: scale(1.02);
+  background: #fffcf5;
 }
 
 .stat-label {
@@ -171,6 +249,12 @@ h1 {
   background: #fff;
   padding: 0.6rem;
   transform: rotate(-0.45deg);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.dataset-tile:hover {
+  transform: translateY(-4px) rotate(0deg);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
 }
 
 .dataset-name {
@@ -221,7 +305,7 @@ h1 {
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 700px;
+  min-width: 1120px;
 }
 
 th,
@@ -249,6 +333,32 @@ th {
   font-size: 0.74rem;
   letter-spacing: 0.06em;
   background: var(--fog);
+}
+
+.progress-cell {
+  min-width: 170px;
+}
+
+.progress-track {
+  height: 10px;
+  border: 2px solid var(--ink);
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd45c 0%, #ff6a3d 100%);
+  transition: width 0.25s ease;
+}
+
+.progress-text {
+  display: inline-block;
+  margin-top: 0.18rem;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .status-pill {
@@ -281,6 +391,70 @@ th {
   padding: 0.06rem 0.4rem;
 }
 
+.metric-guide-sub {
+  margin: 0 0 0.55rem;
+  font-size: 0.84rem;
+}
+
+.metric-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.6rem;
+}
+
+.metric-guide-item {
+  border: 2px solid var(--ink);
+  background: #fff;
+  padding: 0.55rem;
+}
+
+.metric-guide-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.metric-guide-name {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric-guide-toggle {
+  border: 2px solid var(--ink);
+  background: #fff9d8;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0.14rem 0.4rem;
+}
+
+.metric-guide-value {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  font-family: "Courier New", monospace;
+}
+
+.metric-guide-body {
+  margin-top: 0.35rem;
+  border-top: 1px dashed var(--ink);
+  padding-top: 0.35rem;
+}
+
+.metric-guide-body p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.metric-guide-body.is-hidden {
+  display: none;
+}
+
 .detail-pane {
   border: var(--border);
   background: #fff;
@@ -299,6 +473,10 @@ th {
   background: #fffef8;
 }
 
+.detail-block-wide {
+  grid-column: 1 / -1;
+}
+
 .detail-title {
   margin: 0 0 0.3rem;
   font-size: 0.75rem;
@@ -312,6 +490,58 @@ th {
   font-size: 0.78rem;
   white-space: pre-wrap;
   line-height: 1.35;
+}
+
+.scrollable-mono {
+  max-height: 250px;
+  overflow-y: auto;
+  border-top: 1px dashed var(--ink);
+  padding-top: 5px;
+}
+
+.scrollable-mono-short {
+  max-height: 120px;
+  overflow-y: auto;
+  border-top: 1px dashed var(--ink);
+  padding-top: 5px;
+}
+
+/* Metric Mini Tiles */
+.metric-mini-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.metric-mini-tile {
+  background: #fffef8;
+  border: 1px solid var(--ink);
+  padding: 0.35rem 0.6rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 80px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.metric-mini-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+}
+
+.metric-mini-tile .lbl {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  opacity: 0.7;
+  font-family: inherit;
+}
+
+.metric-mini-tile strong {
+  font-family: "Courier New", monospace;
+  font-size: 1rem;
+  font-weight: bold;
 }
 
 .detail-empty {
@@ -345,6 +575,7 @@ th {
   .card-overview,
   .card-rank,
   .card-best,
+  .card-metric-guide,
   .card-sessions,
   .card-details {
     grid-column: span 12;
@@ -356,5 +587,55 @@ th {
 
   .detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  /* Table to Cards */
+  .table-wrap {
+    background: transparent;
+    border: none;
+  }
+  table {
+    min-width: unset;
+    width: 100%;
+  }
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+  thead {
+    display: none;
+  }
+  tbody tr {
+    margin-bottom: 1rem;
+    border: var(--border);
+    background: #fff;
+    padding: 0.5rem;
+    box-shadow: 3px 3px 0 rgba(0,0,0,0.1);
+  }
+  tbody tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.15);
+  }
+  td {
+    border-bottom: 1px dotted #ccc;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.4rem 0.2rem;
+  }
+  td:last-child {
+    border-bottom: 0;
+  }
+  td::before {
+    content: attr(data-label);
+    font-size: 0.70rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-right: 1rem;
+    opacity: 0.65;
+  }
+  .progress-cell {
+    min-width: 120px;
+    flex-grow: 1;
+    text-align: right;
   }
 }
