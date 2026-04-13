@@ -80,10 +80,29 @@ configs/
 scripts/
   inspect_models.py
   build_index.py
+  sync_hf_datasets.py
   run_benchmark.py
+  run_eval_session.py
+  build_dashboard_data.py
+  run_dashboard_live.sh
+  run_web_server.sh
   train_router.py
   train_reranker.py
   demo_local_endpoints.py
+data/
+  raw/
+    hf_datasets/
+  processed/
+    edubench/
+    tutoreval/
+artifacts/
+  dataset_audit/
+  experiments/
+    indexes/
+    results/
+logs/
+  experiments/
+    sessions/
 docs/
   EDU_SWARM_ARCHITECTURE.md
   DATASET_SUPPORT.md
@@ -129,13 +148,16 @@ python scripts/run_benchmark.py ScienceQA --config configs/system.example.yaml -
 ### 6. Prepare EduBench / TutorEval local exports
 
 ```bash
-python scripts/prepare_datasets.py --config configs/system.example.yaml --datasets EduBench TutorEval --split test --out-dir data
+python scripts/sync_hf_datasets.py --datasets EduBench TutorEval
+python scripts/prepare_datasets.py --config configs/system.example.yaml --datasets EduBench TutorEval --split test --out-dir data/processed
 ```
+
+The sync step verifies full upstream downloads and writes an audit report to `artifacts/dataset_audit/dataset_integrity_report.json`.
 
 ### 7. Launch parallel comparison sessions (screen)
 
 ```bash
-./scripts/launch_parallel_sessions.sh --config configs/system.experiments.yaml --split test --limit 40
+./scripts/launch_parallel_sessions.sh --config configs/system.experiments.yaml --split test
 ```
 
 This launches four architectures for each dataset:
@@ -145,7 +167,13 @@ This launches four architectures for each dataset:
 - `non_rag_multi_agent`
 - `single_agent_no_rag`
 
-Logs are written to `logs/experiments/` and results to `artifacts/experiments/`.
+Logs are written to `logs/experiments/sessions/` and results to `artifacts/experiments/results/`.
+
+Session retries now resume from the latest checkpoint by default, so failed attempts
+continue unfinished examples instead of restarting from zero.
+Dashboard progress counts processed examples (successes + terminal failures), so
+long 5xx streaks do not look frozen; by default, 5xx retries are capped at `2`
+per example.
 
 ## EduBench / TutorEval evaluation policy
 
@@ -154,12 +182,21 @@ dataset-aware mapping:
 
 - `EduBench`
   - public rows typically do not ship a direct gold answer.
-  - the adapter extracts consensus reference scores from `metadata.model_predictions`.
-  - metrics include `edu_json_compliance` and `edu_score_alignment`.
+  - the adapter extracts consensus reference signals from `metadata.model_predictions`.
+  - outputs are aligned to the EduBench 12-dimension rubric:
+    - Scenario Adaptation: `edubench_iftc`, `edubench_rtc`, `edubench_crsc`, `edubench_sei`
+    - Factual & Reasoning Accuracy: `edubench_bfa`, `edubench_dka`, `edubench_rpr`, `edubench_eicp`
+    - Pedagogical Application: `edubench_csi`, `edubench_mgp`, `edubench_pas`, `edubench_hots`
+  - grouped summaries are reported as:
+    - `edubench_scenario_adaptation`
+    - `edubench_factual_reasoning_accuracy`
+    - `edubench_pedagogical_application`
+    - `edubench_12d_mean`
 - `TutorEval`
   - public rows use `metadata.key_points` as supervision.
   - key points are normalized into rubric items and a synthesized gold target.
-  - metrics include `rubric_coverage` and token overlap against key points.
+  - primary metric is `tutoreval_keypoint_hit_rate`.
+  - secondary metrics are `tutoreval_correctness`, `tutoreval_completeness`, and `tutoreval_relevance`.
 
 This avoids the incorrect all-zero correctness metrics caused by missing direct
 `answer` fields in the raw public exports.
@@ -167,8 +204,18 @@ This avoids the incorrect all-zero correctness metrics caused by missing direct
 ### 8. Build dashboard data for the web monitor
 
 ```bash
-python scripts/build_dashboard_data.py --results-dir artifacts/experiments --logs-dir logs/experiments --out web/data/session_summary.json
+python scripts/build_dashboard_data.py --results-dir artifacts/experiments/results --logs-dir logs/experiments/sessions --out web/data/session_summary.json
 ```
+
+### 9. Run live dashboard refresh + web server (screen)
+
+```bash
+screen -dmS exp_dashboard_live ./scripts/run_dashboard_live.sh --interval 1
+screen -dmS exp_web_server ./scripts/run_web_server.sh --port 8080
+```
+
+`run_web_server.sh` now serves the dashboard plus a websocket endpoint at `/ws`
+that pushes `session_summary` updates every second.
 
 ## Dataset coverage
 
