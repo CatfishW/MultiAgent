@@ -1,91 +1,234 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Multi-Agent Experiment Board</title>
+    <title>Multi-Agent Experiments</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Patrick+Hand&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Patrick+Hand&family=JetBrains+Mono:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=5" />
   </head>
   <body>
-    <div class="paper-noise" aria-hidden="true"></div>
-    <header class="hero">
-      <p class="hero-kicker">AI.AGII.ORG / MULTI-AGENT</p>
-      <h1>Experiment Session Board</h1>
-      <p class="hero-subtitle">Neo-brutalist monitor for EduBench + TutorEval runs across multi-agent, RAG, and no-RAG baselines.</p>
-      <div class="hero-actions">
-        <button id="refreshButton" class="sketch-btn" type="button">Refresh Now</button>
-        <p id="snapshotTime" class="snapshot-time">snapshot: -- • websocket 1s stream</p>
-        <p id="liveIndicator" class="live-indicator live-unknown">live: --</p>
-        <div class="run-progress" aria-live="polite">
-          <p id="overallProgressLabel" class="run-progress-label">overall progress: --</p>
-          <div class="run-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <span id="overallProgressFill" class="run-progress-fill" style="width: 0%"></span>
-          </div>
-        </div>
+    <aside class="sidebar" aria-label="Primary navigation">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="6" r="3" fill="currentColor"/>
+          <circle cx="6" cy="22" r="3" fill="currentColor"/>
+          <circle cx="26" cy="22" r="3" fill="currentColor"/>
+          <circle cx="16" cy="18" r="3" fill="var(--accent-pink)" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="16" y1="9" x2="16" y2="15" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="9" y1="22" x2="13" y2="19" stroke="currentColor" stroke-width="1.5"/>
+          <line x1="23" y1="22" x2="19" y2="19" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        <span class="brand-text">
+          <span class="brand-kicker">ai.agaii.org</span>
+          <span class="brand-title">multi-agent</span>
+        </span>
       </div>
-    </header>
+      <nav class="nav" role="tablist" aria-label="Sections">
+        <button class="nav-item is-active" data-tab="overview" role="tab" aria-selected="true">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          <span>Overview</span>
+        </button>
+        <button class="nav-item" data-tab="architectures" role="tab" aria-selected="false">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><path d="M9 6h3a3 3 0 0 1 3 3v0a3 3 0 0 1-3 3H9"/><path d="M9 18h3a3 3 0 0 0 3-3v0"/></svg>
+          <span>Architectures</span>
+        </button>
+        <button class="nav-item" data-tab="sessions" role="tab" aria-selected="false">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+          <span>Sessions</span>
+        </button>
+        <button class="nav-item" data-tab="deepdive" role="tab" aria-selected="false">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Deep Dive</span>
+        </button>
+        <button class="nav-item" data-tab="metrics" role="tab" aria-selected="false">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19h16"/><path d="M6 16l4-6 4 3 4-8"/></svg>
+          <span>Metric Guide</span>
+        </button>
+      </nav>
+      <div class="sidebar-foot">
+        <button id="themeToggle" class="ghost-btn" type="button" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18V4a8 8 0 0 1 0 16z"/></svg>
+          theme
+        </button>
+        <p id="liveIndicator" class="live-pill live-unknown">
+          <svg viewBox="0 0 24 24" width="10" height="10" fill="currentColor" aria-hidden="true" class="live-dot"><circle cx="12" cy="12" r="6"/></svg>
+          <span id="liveIndicatorText">live: --</span>
+        </p>
+      </div>
+    </aside>
 
-    <main class="board">
-      <section class="card card-overview reveal" aria-labelledby="overview-title">
-        <h2 id="overview-title">Run Health</h2>
-        <div id="overviewGrid" class="stat-grid"></div>
-      </section>
+    <main class="stage">
+      <header class="stage-head">
+        <div class="stage-head-left">
+          <h1 id="stageTitle">Run Health</h1>
+          <p id="snapshotTime" class="stage-sub">snapshot: -- · live websocket</p>
+        </div>
+        <div class="stage-head-right">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input id="searchBox" type="search" placeholder="Search dataset, architecture, example id…" autocomplete="off" />
+          </div>
+          <button id="refreshButton" class="ghost-btn" type="button">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+            Refresh
+          </button>
+          <a id="exportPptxBtn" class="ghost-btn" href="/export/pptx" download title="Download architecture diagrams as PowerPoint">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            PPTX
+          </a>
+        </div>
+      </header>
 
-      <section class="card card-rank reveal" aria-labelledby="rank-title">
-        <h2 id="rank-title">Architecture Pulse</h2>
-        <div id="rankGrid" class="rank-grid"></div>
-      </section>
+      <div class="progress-bar" aria-live="polite">
+        <div class="progress-bar-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span id="overallProgressFill" class="progress-bar-fill" style="width: 0%"></span>
+        </div>
+        <p id="overallProgressLabel" class="progress-bar-label">overall progress: --</p>
+      </div>
 
-      <section class="card card-best reveal" aria-labelledby="best-title">
-        <h2 id="best-title">Best So Far</h2>
-        <div id="datasetCards" class="dataset-grid"></div>
-      </section>
+      <!-- === Overview tab === -->
+      <section class="tab-panel is-active" data-panel="overview" aria-labelledby="overview-title">
+        <div class="stat-grid" id="overviewGrid"></div>
 
-      <section class="card card-sessions reveal" aria-labelledby="sessions-title">
-        <h2 id="sessions-title">Session Ledger</h2>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Dataset</th>
-                <th>Architecture</th>
-                <th>Status</th>
-                <th>Processed</th>
-                <th>Progress</th>
-                <th>Composite</th>
-                <th>Token F1</th>
-                <th>KeyPt R</th>
-                <th>Rubric</th>
-                <th>Edu Align</th>
-                <th>Latency (ms)</th>
-                <th>API (ms)</th>
-                <th>Complexity</th>
-                <th>Tokens</th>
-              </tr>
-            </thead>
-            <tbody id="sessionsBody"></tbody>
-          </table>
+        <article class="panel" aria-labelledby="arch-diagrams-title">
+          <header class="panel-head">
+            <h2 id="arch-diagrams-title">Pipeline Architectures</h2>
+            <p class="panel-sub">Click a node to see agent role, model, and token budget. Hover edges to trace data flow.</p>
+          </header>
+          <div class="arch-diagram-wrap" id="archDiagrams"></div>
+        </article>
+
+        <div class="panel-grid two-col">
+          <article class="panel" aria-labelledby="rank-title">
+            <header class="panel-head">
+              <h2 id="rank-title">Architecture Leaderboard</h2>
+              <p class="panel-sub">Average composite across finished runs.</p>
+            </header>
+            <div id="rankGrid" class="rank-grid"></div>
+          </article>
+          <article class="panel" aria-labelledby="best-title">
+            <header class="panel-head">
+              <h2 id="best-title">Dataset Cards</h2>
+              <p class="panel-sub">Best architecture so far per dataset.</p>
+            </header>
+            <div id="datasetCards" class="dataset-grid"></div>
+          </article>
         </div>
       </section>
 
-      <section class="card card-metric-guide reveal" aria-labelledby="metric-guide-title">
-        <h2 id="metric-guide-title">Metric Guide</h2>
-        <p class="metric-guide-sub">Each metric can be expanded or hidden for quick interpretation.</p>
-        <div id="metricGuidePanel" class="metric-guide-grid"></div>
+      <!-- === Architectures tab === -->
+      <section class="tab-panel" data-panel="architectures" aria-labelledby="arch-title" hidden>
+        <article class="panel">
+          <header class="panel-head with-controls">
+            <div>
+              <h2 id="arch-title">Side-by-side comparison</h2>
+              <p class="panel-sub">Pick a metric family; bars compare architectures within each dataset.</p>
+            </div>
+            <div class="chip-row" id="familyChips" role="tablist" aria-label="Metric family"></div>
+          </header>
+          <div id="archCompare" class="arch-compare"></div>
+        </article>
       </section>
 
-      <section class="card card-details reveal" aria-labelledby="detail-title">
-        <h2 id="detail-title">Session Deep Dive</h2>
-        <div id="sessionDetail" class="detail-pane"></div>
+      <!-- === Sessions tab === -->
+      <section class="tab-panel" data-panel="sessions" aria-labelledby="sessions-title" hidden>
+        <article class="panel">
+          <header class="panel-head with-controls">
+            <div>
+              <h2 id="sessions-title">Session Ledger</h2>
+              <p class="panel-sub">Click a row to inspect it in Deep Dive. Sort by score or progress with the column headers.</p>
+            </div>
+            <div class="chip-row" id="statusChips" role="group" aria-label="Status filter">
+              <button class="chip is-active" data-status="all">all</button>
+              <button class="chip" data-status="running">running</button>
+              <button class="chip" data-status="finished">finished</button>
+              <button class="chip" data-status="failed">failed</button>
+            </div>
+          </header>
+          <div class="table-wrap">
+            <table class="sessions-table">
+              <thead>
+                <tr>
+                  <th data-sort="dataset">Dataset</th>
+                  <th data-sort="architecture">Architecture</th>
+                  <th data-sort="status">Status</th>
+                  <th data-sort="records" class="num">Processed</th>
+                  <th data-sort="progress_ratio" class="num">Progress</th>
+                  <th data-sort="score" class="num">Composite</th>
+                  <th data-sort="token_f1" class="num">Token F1</th>
+                  <th data-sort="edubench_12d_mean" class="num">EB 12d</th>
+                  <th data-sort="tutoreval_keypoint_hit_rate" class="num">TE Hit</th>
+                  <th data-sort="rubric_coverage" class="num">Rubric</th>
+                  <th data-sort="edu_score_alignment" class="num">Edu Align</th>
+                  <th data-sort="latency_ms" class="num">Latency</th>
+                  <th data-sort="total_tokens" class="num">Tokens</th>
+                </tr>
+              </thead>
+              <tbody id="sessionsBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- === Deep Dive tab === -->
+      <section class="tab-panel" data-panel="deepdive" aria-labelledby="detail-title" hidden>
+        <article class="panel">
+          <header class="panel-head">
+            <h2 id="detail-title">Session Deep Dive</h2>
+            <p class="panel-sub">Select a session row (in Sessions) to inspect timeline, metric breakdown, log tail, and per-example records.</p>
+          </header>
+          <div id="sessionDetail" class="detail-pane"></div>
+        </article>
+        <article class="panel" id="perExamplePanel" style="display:none">
+          <header class="panel-head with-controls">
+            <div>
+              <h2>Per-Example Inspector</h2>
+              <p class="panel-sub">Individual evaluation records from the selected session.</p>
+            </div>
+            <div class="chip-row" id="exampleStatusChips" role="group" aria-label="Example status filter">
+              <button class="chip is-active" data-exstatus="all">all</button>
+              <button class="chip" data-exstatus="success">success</button>
+              <button class="chip" data-exstatus="failed">failed</button>
+            </div>
+          </header>
+          <div class="table-wrap">
+            <table class="sessions-table">
+              <thead>
+                <tr>
+                  <th data-exsort="example_id">Example ID</th>
+                  <th data-exsort="status">Status</th>
+                  <th data-exsort="token_f1" class="num">Token F1</th>
+                  <th data-exsort="exact_match" class="num">Exact Match</th>
+                  <th data-exsort="rubric_coverage" class="num">Rubric</th>
+                  <th>Question Preview</th>
+                  <th>Answer Preview</th>
+                </tr>
+              </thead>
+              <tbody id="perExampleBody"></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
+
+      <!-- === Metric Guide tab === -->
+      <section class="tab-panel" data-panel="metrics" aria-labelledby="metric-guide-title" hidden>
+        <article class="panel">
+          <header class="panel-head">
+            <h2 id="metric-guide-title">Metric Guide</h2>
+            <p class="panel-sub">Formulas, supervision denominators, and gotchas. Values reflect the currently selected session.</p>
+          </header>
+          <div id="metricGuidePanel" class="metric-guide-grid"></div>
+        </article>
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+    <script src="app.js?v=5"></script>
   </body>
 </html>

@@ -4,6 +4,7 @@ import asyncio
 from dataclasses import asdict
 from pathlib import Path
 import random
+import sys
 from typing import Any
 import base64
 import time
@@ -44,7 +45,7 @@ class OpenAICompatClient:
         chat_path: str = "chat/completions",
         request_retries: int = 7,
         retry_base_s: float = 1.0,
-        retry_max_s: float = 30.0,
+        retry_max_s: float = 300.0,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
@@ -149,7 +150,10 @@ class OpenAICompatClient:
 
         raw: dict[str, Any] | None = None
         latency_ms = 0
-        for attempt in range(1, self.request_retries + 1):
+        attempt = 0
+        connection_error_count = 0
+        while True:
+            attempt += 1
             try:
                 started = time.perf_counter()
                 async with httpx.AsyncClient(timeout=self.timeout_s) as client:
@@ -161,11 +165,32 @@ class OpenAICompatClient:
                     response.raise_for_status()
                     raw = response.json()
                 latency_ms = int((time.perf_counter() - started) * 1000)
+                if connection_error_count > 0:
+                    sys.stderr.write(f"[LLM online] Connected after {connection_error_count} retry(s).\n")
                 break
             except asyncio.CancelledError:
                 raise
             except Exception as exc:
-                if not self._should_retry(exc) or attempt >= self.request_retries:
+                is_connection = isinstance(
+                    exc,
+                    (httpx.ConnectError, httpx.TimeoutException, httpx.NetworkError, httpx.TransportError),
+                )
+                is_5xx = isinstance(exc, httpx.HTTPStatusError) and 500 <= exc.response.status_code < 600
+
+                if is_connection or is_5xx:
+                    connection_error_count += 1
+                    delay_s = self._retry_delay_s(exc, connection_error_count)
+                    if delay_s >= 30:
+                        sys.stderr.write(
+                            f"[LLM offline] Waiting for LLM to come back online... "
+                            f"attempt {connection_error_count}, retrying in {delay_s:.0f}s\n"
+                        )
+                    if delay_s > 0:
+                        await asyncio.sleep(delay_s)
+                    continue  # Keep retrying indefinitely
+
+                # Non-retryable errors (4xx, malformed JSON, etc.) fail fast
+                if attempt >= self.request_retries:
                     raise
                 delay_s = self._retry_delay_s(exc, attempt)
                 if delay_s > 0:

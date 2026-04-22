@@ -2,12 +2,24 @@ from __future__ import annotations
 
 import ast
 import json
+import math
 from statistics import mean
 import re
 from typing import Any
 
 from ..core.contracts import BenchmarkExample, PipelineResponse
 from ..utils.text import normalize_text, split_sentences, tokenize
+
+# Minimal English stopword filter used by rubric_coverage for rarity check.
+_STOPWORDS_RARE: frozenset[str] = frozenset(
+    "the a an and or but if then else when while of for to in on at by with from as is are was were be been being do does did have has had this that these those it its their his her our your my we you they he she them us i so not no yes can could should would may might will shall there here into over under about between among within without per via than also such which who whom whose what where why how".split()
+)
+
+_NAN = float("nan")
+
+
+def _is_nan(value: Any) -> bool:
+    return isinstance(value, float) and math.isnan(value)
 
 
 _OPTION_RE = re.compile(r"\(([A-Z])\)|\b([A-Z])\b")
@@ -98,6 +110,8 @@ def exact_match(prediction: str | None, gold: str | None) -> float:
 
 
 def _clamp01(value: float) -> float:
+    if _is_nan(value):
+        return _NAN
     return max(0.0, min(1.0, float(value)))
 
 
@@ -124,18 +138,43 @@ def _extract_student_answer(question: str) -> str:
     return match.group(1).strip()
 
 
+def _walk_string_leaves(node: Any, depth: int, max_depth: int) -> list[str]:
+    out: list[str] = []
+    if isinstance(node, str):
+        s = node.strip()
+        if s:
+            out.append(s)
+    elif isinstance(node, dict) and depth < max_depth:
+        for v in node.values():
+            out.extend(_walk_string_leaves(v, depth + 1, max_depth))
+    elif isinstance(node, (list, tuple)) and depth < max_depth:
+        for v in node:
+            out.extend(_walk_string_leaves(v, depth + 1, max_depth))
+    return out
+
+
 def _scenario_element_integration(example: BenchmarkExample, answer: str) -> float:
     elements: list[str] = []
     info = example.metadata.get("information")
     if isinstance(info, dict):
-        for key in ["Subject", "Level", "Question"]:
-            value = info.get(key)
-            if isinstance(value, str) and value.strip():
-                elements.append(value.strip())
+        elements.extend(_walk_string_leaves(info, depth=0, max_depth=2))
 
     student_answer = _extract_student_answer(example.question)
     if student_answer:
         elements.append(student_answer)
+
+    # dedupe while preserving order, cap at 12 leaves to keep signal focused.
+    seen: set[str] = set()
+    deduped: list[str] = []
+    for el in elements:
+        key = el.lower()
+        if key in seen or len(el) < 3:
+            continue
+        seen.add(key)
+        deduped.append(el)
+        if len(deduped) >= 12:
+            break
+    elements = deduped
 
     if not elements:
         return 0.0
@@ -261,10 +300,11 @@ def tutoreval_keypoint_hit_rate(answer: str, key_points: list[str]) -> float:
             continue
 
         overlap = len(answer_tokens & point_tokens) / len(point_tokens)
-        if overlap >= 0.8:
+        # Softer curve: full credit at >=0.7, linear from 0.25..0.7, 0 below 0.25.
+        if overlap >= 0.7:
             point_scores.append(1.0)
-        elif overlap >= 0.4:
-            point_scores.append(overlap)
+        elif overlap >= 0.25:
+            point_scores.append((overlap - 0.25) / (0.7 - 0.25))
         else:
             point_scores.append(0.0)
 
@@ -278,7 +318,8 @@ def tutoreval_secondary_scores(example: BenchmarkExample, answer: str, key_point
     closed_book = bool(example.metadata.get("closed_book") or example.metadata.get("tutoreval_closed_book"))
 
     if closed_book:
-        relevance = _clamp01(0.8 * question_match + 0.2 * target_match)
+        # Rebalanced: avoid rewarding pure question parroting. Mix question match with keypoint hits.
+        relevance = _clamp01(0.5 * question_match + 0.5 * keypoint_hit_rate)
     else:
         relevance = _clamp01(0.5 * question_match + 0.3 * context_overlap(answer, example.context_text) + 0.2 * keypoint_hit_rate)
 
@@ -439,6 +480,15 @@ def retrieval_doc_recall(response: PipelineResponse, expected_doc_ids: list[str]
 
 
 def rubric_coverage(answer: str, rubric: list[str] | None) -> float:
+    """Tightened rubric coverage.
+
+    A rubric item counts as covered if EITHER:
+      - the first 40 characters appear verbatim in the answer, OR
+      - >=55% of the item's tokens appear in the answer AND at least one rare
+        (>=4 chars, non-stopword) rubric token is present.
+
+    Rewarding verbosity on short generic words is suppressed by the rare-token gate.
+    """
     if not rubric:
         return 0.0
     lowered = normalize_text(answer)
@@ -450,15 +500,19 @@ def rubric_coverage(answer: str, rubric: list[str] | None) -> float:
         item_norm = normalize_text(item)
         if not item_norm:
             continue
-        if item_norm[:40] in lowered:
+        if item_norm[:40] and item_norm[:40] in lowered:
             hits += 1
             continue
         item_tokens = set(tokenize(item_norm))
         if not item_tokens:
             continue
         overlap = len(answer_tokens & item_tokens) / len(item_tokens)
-        if overlap >= 0.35:
-            hits += 1
+        if overlap < 0.55:
+            continue
+        rare_tokens = {t for t in item_tokens if len(t) >= 4 and t not in _STOPWORDS_RARE}
+        if rare_tokens and not (rare_tokens & answer_tokens):
+            continue
+        hits += 1
     return hits / len(rubric)
 
 
@@ -494,19 +548,39 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 
 
 def keypoint_token_alignment(answer: str, key_points: list[str]) -> tuple[float, float]:
+    """Micro-averaged per-keypoint precision + union-based recall.
+
+    Precision: for each key-point, precision_k = |answer_tokens ∩ point_tokens| / |answer_tokens ∩ any_keypoint_tokens or answer_tokens|,
+    then mean over non-empty key points. Recall: fraction of union(key-point tokens) seen in answer.
+    """
     if not key_points:
         return 0.0, 0.0
     answer_tokens = set(tokenize(answer))
     if not answer_tokens:
         return 0.0, 0.0
-    key_tokens: set[str] = set()
+    union_key_tokens: set[str] = set()
+    per_point_tokens: list[set[str]] = []
     for item in key_points:
-        key_tokens.update(tokenize(item))
-    if not key_tokens:
+        toks = set(tokenize(item))
+        if toks:
+            per_point_tokens.append(toks)
+            union_key_tokens.update(toks)
+    if not union_key_tokens:
         return 0.0, 0.0
-    overlap = answer_tokens & key_tokens
-    precision = len(overlap) / len(answer_tokens)
-    recall = len(overlap) / len(key_tokens)
+    # Per-keypoint precision: of the tokens the answer "spent" on this keypoint,
+    # how many actually landed on it? denominator guards against trivial overlap.
+    precisions: list[float] = []
+    for toks in per_point_tokens:
+        hits = answer_tokens & toks
+        if not hits:
+            precisions.append(0.0)
+            continue
+        # precision_k = |hits| / |hits ∪ extras| where extras are answer tokens that overlap any keypoint but not this one.
+        extras = (answer_tokens & union_key_tokens) - toks
+        denom = len(hits) + len(extras)
+        precisions.append(len(hits) / denom if denom else 0.0)
+    precision = mean(precisions) if precisions else 0.0
+    recall = len(answer_tokens & union_key_tokens) / len(union_key_tokens)
     return precision, recall
 
 
@@ -523,7 +597,8 @@ def context_overlap(answer: str, context_text: str | None) -> float:
 def tutoreval_chapter_grounding(example: BenchmarkExample, response: PipelineResponse, answer: str) -> float:
     expected_in_chapter = bool(example.metadata.get("answer_in_chapter") or example.metadata.get("tutoreval_answer_in_chapter"))
     if not expected_in_chapter:
-        return 0.0
+        # Not applicable to this example -- return NaN so summarize() skips it.
+        return _NAN
     if response.retrieved_chunks:
         return grounded_overlap(answer, response)
     return context_overlap(answer, example.context_text)
@@ -542,7 +617,8 @@ def edu_json_compliance(answer: str) -> float:
 
 def edu_score_alignment(answer: str, reference_score: float | None) -> float:
     if reference_score is None:
-        return 0.0
+        # Not gradeable -- return NaN so ungradeable rows are excluded from group means.
+        return _NAN
     predicted = _extract_score(answer)
     if predicted is None:
         payload = _extract_json_object(answer)
@@ -629,7 +705,36 @@ def compute_metrics(example: BenchmarkExample, response: PipelineResponse) -> di
 
 
 def summarize(records: list[dict[str, float]]) -> dict[str, float]:
+    """Mean over records, union of keys, NaN-skip per key.
+
+    Ungradeable rows mark metrics as NaN; those are excluded from that metric's mean
+    so partial-supervision datasets don't have their group means dragged toward zero.
+    A per-key denominator is emitted as ``<key>_n`` for dashboard transparency.
+    """
     if not records:
         return {}
-    keys = sorted(records[0].keys())
-    return {key: mean(record[key] for record in records) for key in keys}
+    keys: set[str] = set()
+    for record in records:
+        if isinstance(record, dict):
+            keys.update(record.keys())
+    summary: dict[str, float] = {}
+    for key in sorted(keys):
+        total = 0.0
+        n = 0
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            if key not in record:
+                continue
+            value = record[key]
+            try:
+                v = float(value)
+            except (TypeError, ValueError):
+                continue
+            if math.isnan(v):
+                continue
+            total += v
+            n += 1
+        summary[key] = (total / n) if n > 0 else _NAN
+        summary[f"{key}_n"] = float(n)
+    return summary

@@ -1,22 +1,22 @@
 endpoints:
   llm:
-    base_url: https://game.agaii.org/llm/v1
+    base_url: https://llm.agaii.org/v1
     capability: text
     supports_vision: true
     api_key_env: null
-    default_model: /home/tang/Models/Qwen3.5-4B
+    default_model: Qwen/Qwen3.5-27B-FP8
     timeout_s: 300
-    max_retries: 2
+    max_retries: 20
     chat_extra:
       extra_body:
-        thinking_budget: 64
+        thinking_budget: 512
   mllm:
-    base_url: https://game.agaii.org/mllm/v1
+    base_url: https://llm.agaii.org/v1
     capability: multimodal
     api_key_env: null
     default_model: Qwen/Qwen3.5-27B-FP8
     timeout_s: 300
-    max_retries: 2
+    max_retries: 20
 
 pipeline:
   default_architecture: hybrid_fast

@@ -388,9 +388,18 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
 
         for attempt in range(1, args.max_example_retries + 1):
             try:
-                response = await system.run_example(example, architecture=args.architecture)
+                response = await asyncio.wait_for(
+                    system.run_example(example, architecture=args.architecture),
+                    timeout=args.example_timeout,
+                )
                 normalized_answer = canonical_answer_text(response.answer)
                 metrics = compute_metrics(example, response)
+                # Success + supervision flags for dashboard denominator-correct averages.
+                metrics["success"] = 1.0
+                metrics["has_gold"] = 1.0 if example.gold_answer else 0.0
+                metrics["has_rubric"] = 1.0 if example.rubric else 0.0
+                ref_score = example.metadata.get("edubench_reference_score_mean")
+                metrics["has_reference_score"] = 1.0 if isinstance(ref_score, (int, float)) else 0.0
                 record = EvaluationRecord(
                     example_id=example.example_id,
                     dataset_name=example.dataset_name,
@@ -400,7 +409,11 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
                     gold_answer=example.gold_answer,
                     retrieved_doc_ids=[chunk.doc_id for chunk in response.retrieved_chunks],
                 )
-                completed_record = _serialize(record)
+                serialized = _serialize(record)
+                if isinstance(serialized, dict):
+                    serialized["success"] = True
+                    serialized["evaluation_profile"] = str(example.metadata.get("evaluation_profile", "generic"))
+                completed_record = serialized
                 break
             except asyncio.CancelledError:
                 raise
@@ -518,7 +531,9 @@ async def main() -> None:
     parser.add_argument("--retry-backoff-base", type=float, default=2.0, help="Base seconds for example retry backoff.")
     parser.add_argument("--retry-backoff-max", type=float, default=45.0, help="Maximum seconds between example retries.")
     parser.add_argument("--checkpoint-every", type=int, default=25, help="Write checkpoint output every N processed examples.")
-    parser.add_argument("--allow-partial", action="store_true", help="Exit successfully even if some examples remain failed.")
+    parser.add_argument("--allow-partial", dest="allow_partial", action="store_true", default=True, help="Exit successfully even if some examples remain failed.")
+    parser.add_argument("--no-allow-partial", dest="allow_partial", action="store_false", help="Fail with exit code 2 if some examples remain incomplete.")
+    parser.add_argument("--example-timeout", type=float, default=300.0, help="Per-example timeout in seconds (default: 300).")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
 

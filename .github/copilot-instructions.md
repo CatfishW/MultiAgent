@@ -1,1 +1,1 @@
-It's mandatory for you to use #askQuestions tool after each complete(generally finished) implementation/cycle.
+It's mandatory for you to use #askQuestions tool after each complete(generally finished) implementation/cycle, and you must provide freeform-input option for users. 

@@ -3,7 +3,11 @@ from __future__ import annotations
 from typing import Any
 
 from ..core.contracts import AgentResult, ModelMessage
-from ..prompts.templates import TUTOR_SYSTEM_PROMPT, VISION_TUTOR_SYSTEM_PROMPT
+from ..prompts.templates import (
+    EDUBENCH_JSON_SYSTEM_PROMPT,
+    TUTOR_SYSTEM_PROMPT,
+    VISION_TUTOR_SYSTEM_PROMPT,
+)
 from .base import AgentContext, BaseAgent
 
 
@@ -58,7 +62,13 @@ class TutorAgent(BaseAgent):
             answer = self._fallback_answer(context)
             return AgentResult(role=self.role_name, text=answer, confidence=0.4)
 
-        system_prompt = VISION_TUTOR_SYSTEM_PROMPT if context.route.modality.value == "multimodal" else TUTOR_SYSTEM_PROMPT
+        eval_profile = str((context.example.metadata or {}).get("evaluation_profile", "")).lower()
+        if eval_profile == "edubench_consensus":
+            system_prompt = EDUBENCH_JSON_SYSTEM_PROMPT
+        elif context.route.modality.value == "multimodal":
+            system_prompt = VISION_TUTOR_SYSTEM_PROMPT
+        else:
+            system_prompt = TUTOR_SYSTEM_PROMPT
         messages = [
             ModelMessage(role="system", content=system_prompt),
             ModelMessage(role="user", content=self._render_user_prompt(context)),

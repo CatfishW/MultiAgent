@@ -12,13 +12,14 @@ RESULTS_DIR="artifacts/experiments/results"
 INDEX_ROOT="artifacts/experiments/indexes"
 LOG_DIR="logs/experiments/sessions"
 PROGRESS_EVERY="10"
-SESSION_RETRIES="6"
-SESSION_RETRY_SLEEP="30"
+SESSION_RETRIES="100"
+SESSION_RETRY_SLEEP="20"
 EXAMPLE_RETRIES="6"
 EXAMPLE_5XX_RETRIES="2"
 EXAMPLE_RETRY_BASE="2.0"
 EXAMPLE_RETRY_MAX="45.0"
 CHECKPOINT_EVERY="25"
+EXAMPLE_TIMEOUT="300"
 RESUME_MODE="1"
 RESUME_ON_RETRY="1"
 
@@ -88,6 +89,10 @@ while [[ $# -gt 0 ]]; do
       CHECKPOINT_EVERY="$2"
       shift 2
       ;;
+    --example-timeout)
+      EXAMPLE_TIMEOUT="$2"
+      shift 2
+      ;;
     --no-resume)
       RESUME_MODE="0"
       shift
@@ -131,9 +136,12 @@ if ! command -v screen >/dev/null 2>&1; then
   exit 1
 fi
 
+EDUBENCH_SOURCE_OVERRIDE="${EDUBENCH_SOURCE_OVERRIDE:-}"
+TUTOREVAL_SOURCE_OVERRIDE="${TUTOREVAL_SOURCE_OVERRIDE:-}"
+
 declare -A DATASET_SOURCES=(
-  [EduBench]="data/processed/edubench/${SPLIT}.jsonl"
-  [TutorEval]="data/processed/tutoreval/${SPLIT}.jsonl"
+  [EduBench]="${EDUBENCH_SOURCE_OVERRIDE:-data/processed/edubench/${SPLIT}.jsonl}"
+  [TutorEval]="${TUTOREVAL_SOURCE_OVERRIDE:-data/processed/tutoreval/${SPLIT}.jsonl}"
 )
 
 declare -A DATASET_CORPUS=(
@@ -158,7 +166,22 @@ ARCHS=(
   "single_agent_no_rag"
 )
 
+ONLY_DATASETS="${ONLY_DATASETS:-}"  # space-separated list to restrict; empty = all
+
+_should_run_dataset() {
+  if [[ -z "$ONLY_DATASETS" ]]; then return 0; fi
+  local target="$1"
+  for d in $ONLY_DATASETS; do
+    if [[ "$d" == "$target" ]]; then return 0; fi
+  done
+  return 1
+}
+
 for dataset in "${!DATASET_SOURCES[@]}"; do
+  if ! _should_run_dataset "$dataset"; then
+    echo "Skipping dataset (not in ONLY_DATASETS): $dataset"
+    continue
+  fi
   source_path="${DATASET_SOURCES[$dataset]}"
   corpus_path="${DATASET_CORPUS[$dataset]}"
   if [[ ! -f "$source_path" && -f "${LEGACY_DATASET_SOURCES[$dataset]}" ]]; then
@@ -197,7 +220,9 @@ for dataset in "${!DATASET_SOURCES[@]}"; do
       "--max-5xx-retries" "$EXAMPLE_5XX_RETRIES"
       "--retry-backoff-base" "$EXAMPLE_RETRY_BASE"
       "--retry-backoff-max" "$EXAMPLE_RETRY_MAX"
-        "--checkpoint-every" "$CHECKPOINT_EVERY"
+      "--checkpoint-every" "$CHECKPOINT_EVERY"
+      "--example-timeout" "$EXAMPLE_TIMEOUT"
+      "--allow-partial"
       "--out" "$out_json"
     )
 
@@ -240,7 +265,10 @@ for dataset in "${!DATASET_SOURCES[@]}"; do
     wrapper_cmd+=("--")
     wrapper_cmd+=("${run_cmd[@]}")
     printf -v wrapper_cmd_quoted '%q ' "${wrapper_cmd[@]}"
-    cmd="cd '$ROOT_DIR' && set -o pipefail && ${wrapper_cmd_quoted}"
+    # Inject safety env vars to reduce native crashes (segfaults, malloc corruption)
+    # from tokenizer/threading race conditions.
+    safety_env="export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TOKENIZERS_PARALLELISM=false MALLOC_ARENA_MAX=2 PYTHONFAULTHANDLER=1;"
+    cmd="cd '$ROOT_DIR' && ${safety_env} set -o pipefail && ${wrapper_cmd_quoted}"
 
     if screen -list | grep -q "\\.${session}[[:space:]]"; then
       echo "Session already exists, skipping: $session"

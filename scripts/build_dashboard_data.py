@@ -216,6 +216,8 @@ def _score(summary: dict[str, Any]) -> float:
 
 
 def _metric_tiles(summary: dict[str, Any]) -> dict[str, float]:
+    # Always include per-key denominator (``<key>_n``) when present so the dashboard
+    # can show "mean (n=X)" transparently for NaN-skipped metrics.
     keys = [
         "edubench_12d_mean",
         "edubench_scenario_adaptation",
@@ -254,6 +256,13 @@ def _metric_tiles(summary: dict[str, Any]) -> dict[str, float]:
     ]
     tiles: dict[str, float] = {}
     for key in keys:
+        if key in summary:
+            tiles[key] = round(_safe_float(summary.get(key), 0.0), 4)
+        n_key = f"{key}_n"
+        if n_key in summary:
+            tiles[n_key] = _safe_float(summary.get(n_key), 0.0)
+    # include supervision flag means to expose coverage
+    for key in ("success", "has_gold", "has_rubric", "has_reference_score"):
         if key in summary:
             tiles[key] = round(_safe_float(summary.get(key), 0.0), 4)
     return tiles
@@ -315,6 +324,52 @@ def _normalize_progress(progress: dict[str, Any] | None, *, status: str, record_
         "pct": round(pct, 2),
         "pct_text": pct_text if pct_text else f"{pct:.1f}%",
     }
+
+
+def _extract_records_sample(result_payload: dict[str, Any] | None, max_n: int = 50) -> list[dict[str, Any]]:
+    """Extract a limited sample of per-example records from a result payload."""
+    if not result_payload or not isinstance(result_payload, dict):
+        return []
+    result = result_payload.get("result")
+    if not isinstance(result, dict):
+        return []
+    records = result.get("records", [])
+    if not isinstance(records, list):
+        return []
+    sample = records[:max_n]
+    out: list[dict[str, Any]] = []
+    for r in sample:
+        if not isinstance(r, dict):
+            continue
+        metrics = r.get("metrics", {}) if isinstance(r.get("metrics"), dict) else {}
+        out.append(
+            {
+                "example_id": r.get("example_id", ""),
+                "question": r.get("question", "")[:200] if isinstance(r.get("question"), str) else "",
+                "answer": (r.get("answer") or r.get("normalized_answer") or "")[:200] if isinstance((r.get("answer") or r.get("normalized_answer")), str) else "",
+                "success": bool(r.get("success", False)),
+                "metrics": {
+                    "token_f1": metrics.get("token_f1"),
+                    "exact_match": metrics.get("exact_match"),
+                    "rubric_coverage": metrics.get("rubric_coverage"),
+                },
+            }
+        )
+    return out
+
+
+def _extract_progress_history(log_info: dict[str, Any]) -> list[float] | None:
+    """Extract progress percentage points from log timeline for sparklines."""
+    timeline = log_info.get("timeline") or []
+    if not isinstance(timeline, list) or len(timeline) < 3:
+        return None
+    # Parse "Progress X/Y (Z%)" lines
+    pcts: list[float] = []
+    for line in timeline:
+        m = re.search(r"Progress\s+\d+/\d+\s+\((\d+(?:\.\d+)?)%\)", str(line))
+        if m:
+            pcts.append(float(m.group(1)))
+    return pcts if len(pcts) >= 2 else None
 
 
 def _architecture_leaderboard(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -392,6 +447,37 @@ def main() -> None:
         elif log_info["finished"] and result_payload is not None:
             status = "finished"
 
+        # Detect stale sessions: no log activity for a long time while not finished/failed.
+        STALE_SECONDS = 30 * 60  # 30 minutes
+        log_age_s = time.time() - log_mtime if log_mtime else float("inf")
+        if status == "running" and log_age_s > STALE_SECONDS:
+            status = "failed"
+            stale_reason = f"stale ({int(log_age_s // 60)}m inactive)"
+        else:
+            stale_reason = ""
+
+        # A concise reason string used by the dashboard status column.
+        status_reason = ""
+        errs = log_info.get("error_lines") or []
+        tail_str = " ".join(log_info.get("tail") or [])
+        if status == "failed":
+            if stale_reason:
+                status_reason = stale_reason
+            elif "502" in tail_str or any("502" in e for e in errs):
+                status_reason = "upstream 502 streak"
+            elif "exit_code=139" in tail_str:
+                status_reason = "worker segfault (exit 139)"
+            elif "exit_code=134" in tail_str:
+                status_reason = "worker memory error (exit 134)"
+            elif errs:
+                status_reason = f"exception: {errs[-1][:120]}"
+            else:
+                status_reason = "retries exhausted"
+        elif status == "finished":
+            status_reason = "complete"
+        else:
+            status_reason = "running"
+
         progress = _normalize_progress(log_info.get("latest_progress"), status=status, record_count=record_count)
         progress_metrics = {}
         latest_progress = log_info.get("latest_progress")
@@ -459,6 +545,7 @@ def main() -> None:
             "failed_records": failed_count,
             "summary": summary,
             "metric_tiles": metric_tiles,
+            "status_reason": status_reason,
             "score": round(score, 4),
             "result_file": str(result_file),
             "log_file": str(log_file),
@@ -478,6 +565,8 @@ def main() -> None:
             "log_timeline": log_info["timeline"],
             "log_line_count": log_info["line_count"],
             "log_errors": log_info["error_lines"],
+            "example_records": _extract_records_sample(result_payload),
+            "progress_history": _extract_progress_history(log_info),
         }
         sessions.append(session)
         by_dataset[dataset].append(session)

@@ -1,6 +1,6 @@
 endpoints:
   llm:
-    base_url: https://game.agaii.org/llm/v1
+    base_url: https://llm.agaii.org/v1
     capability: text
     # Set to true when the endpoint can accept image inputs even if capability is text.
     supports_vision: true
@@ -13,7 +13,7 @@ endpoints:
       extra_body:
         thinking_budget: 2048
   mllm:
-    base_url: https://game.agaii.org/mllm/v1
+    base_url: https://llm.agaii.org/v1
     capability: multimodal
     api_key_env: AGAII_MLLM_API_KEY
     default_model: null
