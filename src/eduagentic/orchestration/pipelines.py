@@ -41,6 +41,33 @@ class BasePipeline:
     def _record(self, trace: list[TraceEvent], kind: str, **payload) -> None:
         trace.append(TraceEvent(kind=kind, payload=payload))
 
+    def _critic_enabled(self, route: RouteDecision) -> bool:
+        """Effective critic switch combining route decision and global kill-switch.
+
+        Returns False if the ablation flag ``pipeline.disable_critic_global`` is set,
+        otherwise defers to ``route.use_critic``. Keeping this on the base class makes
+        every pipeline honor the same ablation contract without duplicating logic.
+        """
+        if getattr(self.config.pipeline, "disable_critic_global", False):
+            return False
+        return bool(route.use_critic)
+
+    def _ablation_metrics(self) -> dict[str, float]:
+        """Emit ablation telemetry so downstream analysis can stratify by condition."""
+        pipeline_cfg = self.config.pipeline
+        flags = {
+            "ablation.hybrid_force_retrieval": float(bool(getattr(pipeline_cfg, "hybrid_force_retrieval", False))),
+            "ablation.hybrid_disable_critic": float(bool(getattr(pipeline_cfg, "hybrid_disable_critic", False))),
+            "ablation.non_rag_enable_retrieval": float(bool(getattr(pipeline_cfg, "non_rag_enable_retrieval", False))),
+            "ablation.disable_critic_global": float(bool(getattr(pipeline_cfg, "disable_critic_global", False))),
+        }
+        tag = getattr(pipeline_cfg, "ablation_tag", None)
+        if tag:
+            # Hash tag into a stable float so it sorts alongside numeric metrics; the
+            # tag string is also placed on the pipeline response at the app layer.
+            flags["ablation.tag_present"] = 1.0
+        return flags
+
     def _safe_float(self, value: Any, default: float = 0.0) -> float:
         try:
             return float(value)
@@ -130,6 +157,7 @@ class BasePipeline:
             "complexity_units": complexity_units,
             "complexity_per_second": complexity_per_second,
         }
+        metrics.update(self._ablation_metrics())
         citations = []
         for output in agent_outputs.values():
             for citation in output.citations:
@@ -171,7 +199,7 @@ class ClassicalRAGPipeline(BasePipeline):
         tutor = await self.tutor.run(context)
         agent_outputs["tutor"] = tutor
         answer = tutor
-        if route.use_critic:
+        if self._critic_enabled(route):
             critic = await self.critic.run(replace(context, draft_answer=tutor.text))
             agent_outputs["critic"] = critic
             answer = critic
@@ -230,7 +258,7 @@ class AgenticRAGPipeline(BasePipeline):
         tutor = await self.tutor.run(context)
         agent_outputs["tutor"] = tutor
         answer = tutor
-        if route.use_critic:
+        if self._critic_enabled(route):
             critic = await self.critic.run(replace(context, draft_answer=tutor.text))
             agent_outputs["critic"] = critic
             answer = critic
@@ -264,13 +292,24 @@ class MultiAgentNoRAGPipeline(BasePipeline):
             base_context,
             student_state=initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts.get("student_state"),
             plan_text=initial.get("planner").text if "planner" in initial else None,
+            search_queries=initial.get("planner", AgentResult(role="planner", text="", artifacts={})).artifacts.get("queries", [example.question]),
             rubric_summary=initial.get("rubric").text if "rubric" in initial else None,
         )
+        # Ablation: non_rag_enable_retrieval lets reviewers separate the grounding
+        # effect from the coordination effect by running the exact same multi-agent
+        # coordination stack with retrieval turned on.
+        retrieved_chunks: list = []
+        if getattr(self.config.pipeline, "non_rag_enable_retrieval", False) and self.deps.retriever is not None:
+            retrieval = await self.retriever.run(context)
+            initial["retriever"] = retrieval
+            retrieved_chunks = list(retrieval.artifacts.get("chunks", []) or [])
+            context = replace(context, retrieved_chunks=retrieved_chunks)
+            self._record(trace, "retrieval", queries=context.search_queries, count=len(retrieved_chunks))
         self._record(trace, "pre_tutor", roles=list(initial.keys()))
         tutor = await self.tutor.run(context)
         initial["tutor"] = tutor
         answer = tutor
-        if route.use_critic:
+        if self._critic_enabled(route):
             critic = await self.critic.run(replace(context, draft_answer=tutor.text))
             initial["critic"] = critic
             answer = critic
@@ -278,7 +317,7 @@ class MultiAgentNoRAGPipeline(BasePipeline):
             example=example,
             route=route,
             answer_result=answer,
-            retrieved_chunks=[],
+            retrieved_chunks=retrieved_chunks,
             agent_outputs=initial,
             trace=trace,
             started=started,
@@ -295,7 +334,7 @@ class SingleAgentNoRAGPipeline(BasePipeline):
         tutor = await self.tutor.run(context)
         agent_outputs: dict[str, AgentResult] = {"tutor": tutor}
         answer = tutor
-        if route.use_critic:
+        if self._critic_enabled(route):
             critic = await self.critic.run(replace(context, draft_answer=tutor.text))
             agent_outputs["critic"] = critic
             answer = critic
@@ -331,7 +370,11 @@ class HybridFastPipeline(BasePipeline):
             rubric_summary=initial.get("rubric").text if "rubric" in initial else None,
         )
         agent_outputs = dict(initial)
-        if route.require_retrieval and self.deps.retriever is not None:
+        # Ablation: hybrid_force_retrieval bypasses the conditional retrieval gate
+        # so reviewers can isolate the contribution of gating itself (Ablation A).
+        force_retrieval = bool(getattr(self.config.pipeline, "hybrid_force_retrieval", False))
+        should_retrieve = (route.require_retrieval or force_retrieval) and self.deps.retriever is not None
+        if should_retrieve:
             retrieval = await self.retriever.run(context)
             agent_outputs["retriever"] = retrieval
             context = replace(context, retrieved_chunks=retrieval.artifacts.get("chunks", []))
@@ -339,7 +382,8 @@ class HybridFastPipeline(BasePipeline):
         tutor = await self.tutor.run(context)
         agent_outputs["tutor"] = tutor
         answer = tutor
-        if not context.retrieved_chunks and self.deps.retriever is not None and route.scores.get("evidence", 0.0) >= 0.45:
+        fallback_threshold = float(getattr(self.config.router, "hybrid_retrieval_fallback", 0.45))
+        if not context.retrieved_chunks and self.deps.retriever is not None and route.scores.get("evidence", 0.0) >= fallback_threshold:
             retrieval = await self.retriever.run(replace(context, search_queries=[example.question]))
             if retrieval.artifacts.get("chunks"):
                 agent_outputs["retriever_fallback"] = retrieval
@@ -348,7 +392,12 @@ class HybridFastPipeline(BasePipeline):
                 agent_outputs["tutor_fallback"] = tutor
                 answer = tutor
                 self._record(trace, "retrieval_fallback", count=len(context.retrieved_chunks))
-        if route.use_critic:
+        # Ablation: hybrid_disable_critic is the hybrid-specific critic kill-switch
+        # (Ablation C), complementary to the global disable_critic_global flag.
+        critic_on = self._critic_enabled(route) and not bool(
+            getattr(self.config.pipeline, "hybrid_disable_critic", False)
+        )
+        if critic_on:
             critic = await self.critic.run(replace(context, draft_answer=answer.text))
             agent_outputs["critic"] = critic
             answer = critic

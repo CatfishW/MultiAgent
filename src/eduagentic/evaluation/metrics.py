@@ -528,6 +528,55 @@ def grounded_overlap(answer: str, response: PipelineResponse) -> float:
     return len(answer_tokens & chunk_tokens) / max(1, len(answer_tokens))
 
 
+def corpus_factuality(answer: str, corpus_index: Any | None) -> float:
+    """Retrieval-agnostic grounding proxy.
+
+    Scores each non-trivial answer sentence against the shared corpus index (the
+    same ``HybridIndex`` used by retrieval pipelines) by issuing the sentence as
+    the query and taking the best top-k similarity. The result is the clipped
+    mean across sentences.
+
+    This metric is deliberately independent of whether the pipeline invoked
+    retrieval. Every architecture is scored against the same corpus, so it does
+    not structurally reward retrieval-enabled systems the way ``grounded_overlap``
+    does (which returns 0.0 whenever ``response.retrieved_chunks`` is empty).
+
+    Returns ``NaN`` if no corpus index is available or the answer has no usable
+    sentences, so ``summarize()`` excludes the example rather than dragging the
+    mean toward zero.
+    """
+    if corpus_index is None:
+        return _NAN
+    if not answer or not str(answer).strip():
+        return _NAN
+    search = getattr(corpus_index, "search", None)
+    if search is None:
+        return _NAN
+    sentences = [s.strip() for s in split_sentences(answer) if s and len(tokenize(s)) >= 6]
+    if not sentences:
+        return _NAN
+    # Cap sentence count so long answers do not dominate latency.
+    sentences = sentences[:12]
+    scores: list[float] = []
+    for sentence in sentences:
+        try:
+            result = search(sentence, top_k=3)
+        except Exception:
+            continue
+        chunks = getattr(result, "chunks", None) or []
+        if not chunks:
+            continue
+        best = 0.0
+        for chunk in chunks:
+            value = float(getattr(chunk, "score", 0.0) or 0.0)
+            if value > best:
+                best = value
+        scores.append(_clamp01(best))
+    if not scores:
+        return _NAN
+    return _clamp01(mean(scores))
+
+
 def adaptivity_signal(example: BenchmarkExample, answer: str) -> float:
     if not example.dialogue_history:
         return 0.0
@@ -630,7 +679,18 @@ def edu_score_alignment(answer: str, reference_score: float | None) -> float:
     return max(0.0, 1.0 - (delta / 100.0))
 
 
-def compute_metrics(example: BenchmarkExample, response: PipelineResponse) -> dict[str, float]:
+def compute_metrics(
+    example: BenchmarkExample,
+    response: PipelineResponse,
+    *,
+    corpus_index: Any | None = None,
+) -> dict[str, float]:
+    """Compute the full metric dict for one ``(example, response)`` pair.
+
+    Adds ``corpus_factuality`` when a shared corpus index is supplied. Omitting
+    ``corpus_index`` preserves the historical behavior (metric is NaN and skipped
+    by ``summarize``), so all existing call sites stay backward compatible.
+    """
     answer = canonical_answer_text(response.answer or "")
     profile = str(example.metadata.get("evaluation_profile", "")).lower()
     reference_score_raw = example.metadata.get("edubench_reference_score_mean")
@@ -646,6 +706,7 @@ def compute_metrics(example: BenchmarkExample, response: PipelineResponse) -> di
         "choice_accuracy": choice_accuracy(answer, example.choices, example.gold_answer),
         "citation_coverage": citation_coverage(response),
         "grounded_overlap": grounded_overlap(answer, response),
+        "corpus_factuality": corpus_factuality(answer, corpus_index),
         "rubric_coverage": rubric_coverage(answer, example.rubric),
         "adaptivity": adaptivity_signal(example, answer),
         "retrieval_doc_recall": retrieval_doc_recall(response, example.expected_doc_ids),

@@ -52,6 +52,15 @@ class RouterConfig:
     coordination_threshold: float = 0.5
     prefer_hybrid_for_mixed: bool = True
     model_path: str | None = None
+    # Hybrid retrieval gate: used inside HYBRID_FAST to decide whether to retrieve.
+    # Default matches the production value embedded in LightweightRegimeRouter.
+    hybrid_retrieval_gate: float = 0.35
+    # Fallback retrieval threshold used by HybridFastPipeline when the primary
+    # path returned no chunks. Default matches the historical hardcoded value.
+    hybrid_retrieval_fallback: float = 0.45
+    # Router ablation modes. Both default False => current production behavior.
+    use_heuristic_only: bool = False
+    use_classifier_only: bool = False
 
 
 @dataclass(slots=True)
@@ -65,6 +74,14 @@ class PipelineConfig:
     use_fast_rule_planner: bool = True
     parallel_specialists: bool = True
     cache_dir: str = ".cache/eduagentic/models"
+    # Ablation knobs. All default False => current production behavior.
+    # Reviewer-critical ablations (see docs/EXPERIMENTS.md).
+    hybrid_force_retrieval: bool = False
+    hybrid_disable_critic: bool = False
+    non_rag_enable_retrieval: bool = False
+    disable_critic_global: bool = False
+    # Ablation tag propagated into response.metrics for downstream analysis.
+    ablation_tag: str | None = None
 
 
 @dataclass(slots=True)

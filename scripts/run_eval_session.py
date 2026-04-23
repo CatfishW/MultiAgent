@@ -393,7 +393,11 @@ async def _run(args: argparse.Namespace) -> dict[str, Any]:
                     timeout=args.example_timeout,
                 )
                 normalized_answer = canonical_answer_text(response.answer)
-                metrics = compute_metrics(example, response)
+                # Pass the shared corpus index (if loaded) so the retrieval-agnostic
+                # ``corpus_factuality`` metric can be computed consistently across
+                # all architectures, not just the retrieval-enabled ones.
+                corpus_index = getattr(system._deps, "retriever", None)
+                metrics = compute_metrics(example, response, corpus_index=corpus_index)
                 # Success + supervision flags for dashboard denominator-correct averages.
                 metrics["success"] = 1.0
                 metrics["has_gold"] = 1.0 if example.gold_answer else 0.0

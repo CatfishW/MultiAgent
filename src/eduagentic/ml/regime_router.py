@@ -145,16 +145,24 @@ class LightweightRegimeRouter:
     def decide(self, example: BenchmarkExample) -> RouteDecision:
         dataset_key = example.dataset_name.lower()
         scores = self._heuristic_scores(example)
-        if self.trained is not None:
+        router_cfg = self.config.router
+        use_heuristic_only = bool(getattr(router_cfg, "use_heuristic_only", False))
+        use_classifier_only = bool(getattr(router_cfg, "use_classifier_only", False))
+        if use_classifier_only and self.trained is None:
+            raise RuntimeError(
+                "router.use_classifier_only is set but no trained classifier is loaded. "
+                "Set router.model_path or clear use_classifier_only."
+            )
+        if self.trained is not None and not use_heuristic_only:
             vector = self.trained.vectorizer.transform([self._text_blob(example)])
             prediction = self.trained.model.predict(vector)[0]
             predicted_family = ArchitectureFamily(prediction)
-        elif dataset_key in DATASET_PRIORS:
+        elif dataset_key in DATASET_PRIORS and not use_heuristic_only:
             _, predicted_family = DATASET_PRIORS[dataset_key]
         else:
-            if scores["evidence"] >= self.config.router.evidence_threshold and scores["coordination"] < 0.35:
+            if scores["evidence"] >= router_cfg.evidence_threshold and scores["coordination"] < 0.35:
                 predicted_family = ArchitectureFamily.CLASSICAL_RAG
-            elif scores["evidence"] >= 0.35 and scores["coordination"] >= self.config.router.coordination_threshold:
+            elif scores["evidence"] >= 0.35 and scores["coordination"] >= router_cfg.coordination_threshold:
                 predicted_family = ArchitectureFamily.AGENTIC_RAG
             elif scores["coordination"] >= 0.55 and scores["evidence"] < 0.28:
                 predicted_family = ArchitectureFamily.NON_RAG_MULTI_AGENT
@@ -175,7 +183,8 @@ class LightweightRegimeRouter:
         modality = Modality.MULTIMODAL if example.images else Modality.TEXT
         require_retrieval = predicted_family in {ArchitectureFamily.CLASSICAL_RAG, ArchitectureFamily.AGENTIC_RAG}
         if predicted_family == ArchitectureFamily.HYBRID_FAST:
-            require_retrieval = scores["evidence"] >= 0.35 or regime == TaskRegime.EVIDENCE_GROUNDED
+            gate = float(getattr(router_cfg, "hybrid_retrieval_gate", 0.35))
+            require_retrieval = scores["evidence"] >= gate or regime == TaskRegime.EVIDENCE_GROUNDED
         use_rubric_agent = bool(example.rubric) or regime == TaskRegime.RUBRIC_FEEDBACK
         use_critic = self.config.pipeline.enable_critic and (
             require_retrieval or use_rubric_agent or regime in {TaskRegime.ADAPTIVE_TUTORING, TaskRegime.LESSON_PLANNING}
