@@ -19,6 +19,10 @@ class EndpointConfig:
     supports_vision: bool = False
     api_key_env: str | None = None
     default_model: str | None = None
+    # If set, the registry returns exactly this model id from pick_model(),
+    # bypassing the prefer_fast rank heuristic. Used for dual-backbone
+    # experiments where every agent must run on the named backbone.
+    pinned_model: str | None = None
     timeout_s: float = 120.0
     max_retries: int = 2
     enabled: bool = True

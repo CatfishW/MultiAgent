@@ -1,0 +1,63 @@
+endpoints:
+  llm:
+    base_url: https://llm.agaii.org/v1
+    capability: text
+    supports_vision: true
+    api_key_env: null
+    default_model: /home/tang/Projects/Models/Qwen3.5-4B
+    pinned_model: /home/tang/Projects/Models/Qwen3.5-4B
+    timeout_s: 300
+    max_retries: 20
+    chat_extra:
+      extra_body:
+        thinking_budget: 512
+  mllm:
+    base_url: https://llm.agaii.org/v1
+    capability: multimodal
+    api_key_env: null
+    default_model: /home/tang/Projects/Models/Qwen3.5-4B
+    pinned_model: /home/tang/Projects/Models/Qwen3.5-4B
+    timeout_s: 300
+    max_retries: 20
+
+pipeline:
+  default_architecture: hybrid_fast
+  enable_swarm_runtime: false
+  enable_critic: true
+  enable_rubric_agent: true
+  enable_diagnoser: true
+  enable_planner_llm: false
+  use_fast_rule_planner: true
+  parallel_specialists: true
+
+retriever:
+  chunk_size: 220
+  chunk_overlap: 40
+  top_k: 8
+  final_k: 4
+  latent_dim: 128
+
+router:
+  evidence_threshold: 0.52
+  coordination_threshold: 0.50
+
+datasets:
+  root_dir: data
+  use_huggingface_when_available: true
+  local_only: false
+  registry_overrides:
+    EduBench:
+      default_loader: local_jsonl
+      default_source: data/processed/edubench/test.jsonl
+    TutorEval:
+      default_loader: local_jsonl
+      default_source: data/processed/tutoreval/test.jsonl
+
+budget:
+  max_latency_ms: 12000
+  max_tool_calls: 4
+  max_agents: 4
+  max_critic_rounds: 1
+  max_retrieval_queries: 3
+  max_context_chars: 6000
+  max_response_tokens: 900

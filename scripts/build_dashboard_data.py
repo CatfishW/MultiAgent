@@ -626,8 +626,24 @@ def main() -> None:
     }
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(_scrub_nonfinite(payload), ensure_ascii=False, indent=2, allow_nan=False),
+        encoding="utf-8",
+    )
     print(f"Wrote dashboard data to {out_path}")
+
+
+def _scrub_nonfinite(obj):
+    """Recursively replace NaN / Infinity with None so the emitted JSON is
+    valid under RFC 8259 and can be parsed by ``JSON.parse`` in browsers."""
+    import math
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _scrub_nonfinite(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_scrub_nonfinite(v) for v in obj]
+    return obj
 
 
 if __name__ == "__main__":

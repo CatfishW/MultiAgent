@@ -184,6 +184,15 @@ class BasePipeline:
 
 
 class ClassicalRAGPipeline(BasePipeline):
+    """Paper: "Classical RAG" retrieval mechanism (baseline).
+
+    Retrieval is the top-level controller: the retriever runs on every
+    example using the raw student query, then the tutor (and optional critic)
+    generates from the top-k chunks. No planner, diagnoser, or rubric agent
+    runs before retrieval. This is the retrieve-then-read pipeline against
+    which every other mechanism in the paper is compared.
+    """
+
     architecture = ArchitectureFamily.CLASSICAL_RAG
 
     async def run(self, example: BenchmarkExample, route: RouteDecision) -> PipelineResponse:
@@ -274,6 +283,19 @@ class AgenticRAGPipeline(BasePipeline):
 
 
 class MultiAgentNoRAGPipeline(BasePipeline):
+    """Paper: "Multi-Agent (no retrieval)" retrieval mechanism.
+
+    The retriever is removed. The planner, diagnoser, and rubric agents run
+    in parallel on the raw prompt, build the shared AgentContext, and the
+    tutor (plus optional critic) generates from those summaries alone. This
+    pipeline isolates how much of classical RAG's behavior can be reproduced
+    without ever consulting the corpus.
+
+    Ablation flag ``pipeline.non_rag_enable_retrieval`` can turn the
+    retriever back on without changing coordination, so reviewers can
+    separate the grounding effect from the coordination effect.
+    """
+
     architecture = ArchitectureFamily.NON_RAG_MULTI_AGENT
 
     async def run(self, example: BenchmarkExample, route: RouteDecision) -> PipelineResponse:
@@ -325,6 +347,15 @@ class MultiAgentNoRAGPipeline(BasePipeline):
 
 
 class SingleAgentNoRAGPipeline(BasePipeline):
+    """Paper: "Single-Agent (no retrieval)" ablation floor.
+
+    Only the tutor (plus optional critic) runs. No coordination, no
+    retrieval. This is the floor we report to rule out the hypothesis that
+    the backbone alone is strong enough to solve the benchmarks and to
+    quantify how much the coordination stack contributes in the absence
+    of retrieval.
+    """
+
     architecture = ArchitectureFamily.SINGLE_AGENT_NO_RAG
 
     async def run(self, example: BenchmarkExample, route: RouteDecision) -> PipelineResponse:
@@ -350,6 +381,29 @@ class SingleAgentNoRAGPipeline(BasePipeline):
 
 
 class HybridFastPipeline(BasePipeline):
+    """Paper: "Multi-Agent Retrieval (ours)" retrieval mechanism.
+
+    Unlike classical RAG, the retriever is not the top-level controller.
+    The coordination agents (planner, diagnoser, rubric) run in parallel
+    first to build a plan, a student-state summary, and a rubric checklist.
+    Their outputs populate the shared AgentContext, and a lightweight
+    router gate decides per example whether to call the retriever:
+
+        require_retrieval(x) = 1[s_e(x) >= tau_e  OR  regime(x) == EG]
+
+    If the gate fires, the retriever runs with the planner's scoped queries
+    rather than the raw prompt. After the tutor produces a draft, a single
+    fallback retrieval pass is triggered when the draft has no grounding
+    but the router's evidence score is above ``hybrid_retrieval_fallback``
+    (default 0.45). The critic then revises against the rubric and any
+    retrieved chunks.
+
+    Ablation flags:
+      - ``pipeline.hybrid_force_retrieval``: bypass the gate and always
+        retrieve (isolates the gating contribution).
+      - ``pipeline.hybrid_disable_critic``: skip the critic stage.
+    """
+
     architecture = ArchitectureFamily.HYBRID_FAST
 
     async def run(self, example: BenchmarkExample, route: RouteDecision) -> PipelineResponse:

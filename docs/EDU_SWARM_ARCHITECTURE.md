@@ -2,14 +2,23 @@
 
 ## Why this extension exists
 
-The uploaded Python port already provided a faithful swarm / mailbox / task-list
-substrate. What it did **not** provide was the conference-facing layer needed
-for educational multi-agent research:
+This repository operationalizes the paper *Multi-Agent Retrieval as an
+Alternative to Classical RAG: A Controlled Comparison on Educational
+Tutoring Benchmarks* (MultiAgentOL/main_smc.tex). The central systems
+question is whether a multi-agent coordination stack can **replace**
+classical RAG's retrieve-then-read pipeline as the mechanism that supplies
+grounded evidence to a tutoring model. The four pipelines below are the
+four retrieval mechanisms compared in the paper; the code enum names map
+one-to-one to the paper labels.
+
+The uploaded Python port provided a swarm / mailbox / task-list substrate.
+What it did **not** provide was the conference-facing layer needed to run
+that comparison:
 
 - local endpoint model discovery via `/models`
-- fast classical RAG and agentic RAG baselines
-- conditional-retrieval hybrid orchestration
-- tutoring / rubric / planning specialists
+- fast classical RAG baseline and an agentic RAG variant
+- multi-agent retrieval with a per-example retrieval gate
+- tutoring / rubric / planning / diagnosis specialists
 - benchmark adapters for every dataset family in the paper
 - evaluation utilities that separate correctness, grounding, pedagogy, and cost
 
@@ -27,13 +36,24 @@ request is a normal benchmark example.
 The optional `SwarmRuntimeAdapter` bridges selected specialist execution onto
 `agent_swarm_port` for ablations or reviewer-required comparisons.
 
-### 2. Four architecture families
+### 2. Four retrieval mechanisms (the paper's comparison axis)
 
-- `classical_rag`: retrieve -> pack context -> answer -> optional critic
-- `agentic_rag`: planner/diagnoser/rubric -> retrieve -> answer -> critic
-- `non_rag_multi_agent`: planner/diagnoser/rubric -> answer -> critic
-- `hybrid_fast`: conditionally retrieve only when the task actually needs it,
-  with a fallback retrieval pass if the draft answer signals under-grounding
+Each code enum in `ArchitectureFamily` maps to one paper-level label.
+All four mechanisms share the same Qwen3.5-4B backbone, the same corpus,
+the same reranker, and the same response budget; they differ only in how
+evidence is supplied to the reader.
+
+| Code enum                  | Paper label                   | What it does                                                                                      |
+| -------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `CLASSICAL_RAG`            | *Classical RAG* (baseline)    | retrieve -> pack context -> answer -> optional critic; retriever is the top-level controller     |
+| `NON_RAG_MULTI_AGENT`      | *Multi-Agent (no retrieval)*  | planner \| diagnoser \| rubric -> answer -> critic; no retriever                                  |
+| `SINGLE_AGENT_NO_RAG`      | *Single-Agent (no retrieval)* | tutor -> optional critic; ablation floor                                                          |
+| `HYBRID_FAST`              | *Multi-Agent Retrieval* (ours) | planner \| diagnoser \| rubric -> gate -> retriever (if gate fires) -> tutor -> critic -> fallback |
+| `AGENTIC_RAG`              | *(not reported in the paper)* | planner \| diagnoser \| rubric -> retrieve-always -> tutor -> critic; parity-controlled outputs unavailable |
+
+The paper reports only the four rows with comparable outputs; `AGENTIC_RAG`
+remains implemented for sanity-checking but is excluded from the headline
+table.
 
 ### 3. Lightweight ML modules
 

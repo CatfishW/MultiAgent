@@ -102,6 +102,26 @@ class ModelRegistry:
     ) -> ModelDescriptor:
         candidates: list[ModelDescriptor] = []
         endpoints = [endpoint_name] if endpoint_name else list(self.config.endpoints.keys())
+        # Honor endpoint.pinned_model first: if any candidate endpoint declares a
+        # pinned model, return exactly that model id. This bypasses the
+        # prefer_fast rank heuristic so dual-backbone experiments can force a
+        # specific backbone (e.g. Qwen3.5-4B or Qwen3.6-27B-FP8) for every
+        # agent in the pipeline.
+        for endpoint in endpoints:
+            endpoint_config = self.config.endpoints.get(endpoint)
+            if endpoint_config is None or not endpoint_config.pinned_model:
+                continue
+            pinned = endpoint_config.pinned_model
+            models = await self.get_models(endpoint)
+            for model in models:
+                if model.model_id == pinned:
+                    return model
+            return ModelDescriptor(
+                endpoint=endpoint,
+                model_id=pinned,
+                capability=endpoint_config.capability,
+                raw={"id": pinned, "pinned": True},
+            )
         for endpoint in endpoints:
             endpoint_config = self.config.endpoints.get(endpoint)
             models = await self.get_models(endpoint)
