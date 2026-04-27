@@ -4,8 +4,8 @@ endpoints:
     capability: text
     supports_vision: true
     api_key_env: null
-    default_model: /home/benwulab/Models/Qwen3.6-27B-FP8
-    pinned_model: /home/benwulab/Models/Qwen3.6-27B-FP8
+    default_model: /home/benwulab/Models/Qwen3.5-27B-FP8
+    pinned_model: /home/benwulab/Models/Qwen3.5-27B-FP8
     timeout_s: 600
     max_retries: 20
     chat_extra:
@@ -15,8 +15,8 @@ endpoints:
     base_url: https://llm.agaii.org/v1
     capability: multimodal
     api_key_env: null
-    default_model: /home/benwulab/Models/Qwen3.6-27B-FP8
-    pinned_model: /home/benwulab/Models/Qwen3.6-27B-FP8
+    default_model: /home/benwulab/Models/Qwen3.5-27B-FP8
+    pinned_model: /home/benwulab/Models/Qwen3.5-27B-FP8
     timeout_s: 600
     max_retries: 20
 

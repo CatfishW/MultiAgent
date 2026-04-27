@@ -10,8 +10,8 @@ This repository now contains two layers:
 The added implementation is designed for **high cohesion, low coupling, and
 fast execution** against **local OpenAI-compatible endpoints**:
 
-- text LLM endpoint: `https://game.agaii.org/llm/v1`
-- multimodal endpoint: `https://game.agaii.org/mllm/v1`
+- text LLM endpoint: `https://llm.agaii.org/v1`
+- multimodal endpoint: `https://llm.agaii.org/v1`
 - model discovery: `GET /models`
 - optional: mark text endpoint as vision-capable with `supports_vision: true`
 

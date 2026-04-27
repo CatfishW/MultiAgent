@@ -8,7 +8,13 @@ command to run, where outputs land, and the corresponding slot in the paper
 
 All commands assume:
 - Python environment at `.venv` with `pip install -e .` already executed.
-- Qwen-compatible endpoint defined in `configs/system.experiments.yaml`.
+- Qwen-compatible endpoint defined in a pinned paper config. Use
+  `configs/system.experiments.qwen4b.yaml` for the main 4B comparison and
+  ablations below; use `configs/system.experiments.qwen27b.yaml` only for the
+  larger-backbone replication track.
+- The paper configs now pin the exact model ids advertised by
+  `https://llm.agaii.org/v1/models`: `/home/tang/Projects/Models/Qwen3.5-4B`
+  and `/home/benwulab/Models/Qwen3.5-27B-FP8`.
 - Shared corpus index prebuilt under `artifacts/experiments/indexes/<dataset>/`.
 
 Unless noted otherwise, every runner reuses `scripts/run_eval_session.py` under
@@ -46,7 +52,7 @@ the baseline run; only the config flags differ.
 
 ```bash
 python scripts/run_ablation_session.py TutorEval \
-  --config configs/system.experiments.yaml \
+  --config configs/system.experiments.qwen4b.yaml \
   --architecture hybrid_fast --ablation hybrid_force_retrieval \
   --source data/processed/tutoreval/test.jsonl \
   --index-path artifacts/experiments/indexes/tutoreval/hybrid_index.pkl \
@@ -57,7 +63,7 @@ python scripts/run_ablation_session.py TutorEval \
 
 ```bash
 python scripts/run_ablation_session.py TutorEval \
-  --config configs/system.experiments.yaml \
+  --config configs/system.experiments.qwen4b.yaml \
   --architecture non_rag_multi_agent --ablation non_rag_enable_retrieval \
   --index-path artifacts/experiments/indexes/tutoreval/hybrid_index.pkl
 ```
@@ -66,7 +72,7 @@ python scripts/run_ablation_session.py TutorEval \
 
 ```bash
 python scripts/run_ablation_session.py TutorEval \
-  --config configs/system.experiments.yaml \
+  --config configs/system.experiments.qwen4b.yaml \
   --architecture hybrid_fast --ablation hybrid_disable_critic \
   --index-path artifacts/experiments/indexes/tutoreval/hybrid_index.pkl
 ```
@@ -85,7 +91,7 @@ python scripts/run_ablation_session.py EduBench \
 Outputs: `artifacts/ablations/<ablation_tag>/<dataset>_<arch>.json`. Each file
 also stores the materialized config under `configs/ablation_<tag>.yaml`.
 
-Paper slot: *Experimental Results / Planned controlled experiments*.
+Paper slot: *Experimental Results / Ablations: attributing the hybrid's gains*.
 
 ## 3. Router threshold sensitivity sweep
 
@@ -93,7 +99,7 @@ Reviewer concern: conditional retrieval sits on a single pair of thresholds.
 
 ```bash
 python scripts/run_threshold_sweep.py TutorEval \
-  --config configs/system.experiments.yaml \
+  --config configs/system.experiments.qwen4b.yaml \
   --architecture hybrid_fast \
   --thresholds 0.30 0.35 0.40 0.45 0.50 0.55 \
   --index-path artifacts/experiments/indexes/tutoreval/hybrid_index.pkl \
@@ -102,8 +108,7 @@ python scripts/run_threshold_sweep.py TutorEval \
 
 Outputs: `artifacts/sweeps/tau_e_main/{threshold_sweep.tsv, <dataset>_<arch>_tauE*_gate*.json}`.
 
-Paper slot: *Methodology / Regime-aware routing* (sensitivity sentence) and
-*Planned controlled experiments*.
+Paper slot: *Methodology / Regime-aware routing* (sensitivity sentence).
 
 ## 4. Retrieval-agnostic grounding metric
 
@@ -161,7 +166,7 @@ comparison (reviewer-safe, mechanism-focused), run:
 ```bash
 for arch in hybrid_fast classical_rag non_rag_multi_agent single_agent_no_rag; do
   python scripts/run_ablation_session.py HotpotQA \
-    --config configs/system.experiments.yaml \
+    --config configs/system.experiments.qwen4b.yaml \
     --architecture "$arch" --ablation baseline \
     --source data/processed/hotpotqa/test.jsonl \
     --index-path artifacts/experiments/indexes/hotpotqa/hybrid_index.pkl \
@@ -170,13 +175,18 @@ done
 ```
 
 Paper slot: *Related Work / RAG and agentic retrieval control* (mechanism
-claim) and *Planned controlled experiments*.
+claim).
 
 ## Conventions
 
 - All JSON outputs include per-example `ablation.*` telemetry keys coming from
   `BasePipeline._ablation_metrics`, so downstream tools can stratify without
   re-parsing config files.
+- `agent_count` counts materialized pipeline stages, whereas
+  `llm_call_count` counts only outputs that carry LLM usage payloads. The
+  paper's capacity discussion should use `llm_call_count` for backbone
+  invocations and cite `agent_count` separately only when discussing
+  structural asymmetry.
 - Every new script exits non-zero if the Qwen endpoint, dataset file, or index
   is missing, so silent empty runs are prevented.
 - Tests under `tests/test_pipeline_ablations.py` cover the critical ablation

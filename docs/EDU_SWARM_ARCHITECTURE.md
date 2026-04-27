@@ -39,9 +39,12 @@ The optional `SwarmRuntimeAdapter` bridges selected specialist execution onto
 ### 2. Four retrieval mechanisms (the paper's comparison axis)
 
 Each code enum in `ArchitectureFamily` maps to one paper-level label.
-All four mechanisms share the same Qwen3.5-4B backbone, the same corpus,
-the same reranker, and the same response budget; they differ only in how
-evidence is supplied to the reader.
+All four mechanisms share the same tutor/critic backbone, the same corpus,
+the same reranker, and the same per-call response budget; they differ only
+in how evidence is supplied to the reader. In the released paper-grade runs,
+the planner, diagnoser, and rubric stages are deterministic lightweight
+modules, so `agent_count` measures materialized pipeline roles while
+`llm_call_count` isolates actual backbone invocations.
 
 | Code enum                  | Paper label                   | What it does                                                                                      |
 | -------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -90,6 +93,14 @@ which is one of the main speed advantages over large always-on RAG stacks.
 5. Context packing uses MMR to reduce redundant tokens.
 6. The reference swarm runtime is optional so most benchmark runs do not pay
    file-backed coordination overhead.
+
+## Paper-grade audit trail
+
+Use `scripts/audit_paper_runs.py` to regenerate the metadata that the paper
+quotes from archived run files: model identifiers, thinking budget, corpus
+row counts, index chunk counts, retrieval rates, `agent_count`,
+`llm_call_count`, `complexity_units`, and `corpus_factuality`. This avoids
+drifting from the released result JSONs when tables or prose are updated.
 
 ## Expected research use
 

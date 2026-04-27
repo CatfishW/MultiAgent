@@ -66,3 +66,49 @@ async def test_pick_model_allows_multimodal_from_vision_capable_text_endpoint():
     descriptor = await registry.pick_model(capability="multimodal")
 
     assert descriptor.model_id == "qwen-4b"
+
+
+@pytest.mark.asyncio
+async def test_pick_model_prefers_endpoint_default_model_when_advertised():
+    config = AppConfig(
+        endpoints={
+            "llm": EndpointConfig(
+                name="llm",
+                base_url="https://example.invalid/v1",
+                capability="text",
+                default_model="paper-27b",
+            )
+        }
+    )
+    registry = ModelRegistry(config)
+    registry._models = {
+        "llm": [
+            ModelDescriptor(endpoint="llm", model_id="qwen-4b", capability="text", raw={}),
+            ModelDescriptor(endpoint="llm", model_id="paper-27b", capability="text", raw={}),
+        ]
+    }
+
+    descriptor = await registry.pick_model(capability="text", endpoint_name="llm")
+
+    assert descriptor.model_id == "paper-27b"
+
+
+@pytest.mark.asyncio
+async def test_pick_model_raises_for_unknown_pinned_model_when_models_are_known():
+    config = AppConfig(
+        endpoints={
+            "llm": EndpointConfig(
+                name="llm",
+                base_url="https://example.invalid/v1",
+                capability="text",
+                pinned_model="missing-27b",
+            )
+        }
+    )
+    registry = ModelRegistry(config)
+    registry._models = {
+        "llm": [ModelDescriptor(endpoint="llm", model_id="qwen-4b", capability="text", raw={})]
+    }
+
+    with pytest.raises(LookupError, match="was not advertised"):
+        await registry.pick_model(capability="text", endpoint_name="llm")

@@ -18,10 +18,14 @@ class EndpointConfig:
     capability: str = "text"
     supports_vision: bool = False
     api_key_env: str | None = None
+    # Preferred model id. When the endpoint advertises this id via /models,
+    # the registry chooses it before applying its size heuristic; when model
+    # discovery fails, it remains the fallback id.
     default_model: str | None = None
-    # If set, the registry returns exactly this model id from pick_model(),
-    # bypassing the prefer_fast rank heuristic. Used for dual-backbone
-    # experiments where every agent must run on the named backbone.
+    # Hard requirement for reproducibility-sensitive runs. If set, the
+    # registry returns exactly this model id from pick_model(), bypassing the
+    # prefer_fast rank heuristic. When /models is available, the id must be
+    # present there or initialization fails loudly.
     pinned_model: str | None = None
     timeout_s: float = 120.0
     max_retries: int = 2
@@ -110,13 +114,13 @@ DEFAULT_CONFIG = AppConfig(
     endpoints={
         "llm": EndpointConfig(
             name="llm",
-            base_url="https://game.agaii.org/llm/v1",
+            base_url="https://llm.agaii.org/v1",
             capability="text",
             api_key_env="AGAII_LLM_API_KEY",
         ),
         "mllm": EndpointConfig(
             name="mllm",
-            base_url="https://game.agaii.org/mllm/v1",
+            base_url="https://llm.agaii.org/v1",
             capability="multimodal",
             api_key_env="AGAII_MLLM_API_KEY",
         ),

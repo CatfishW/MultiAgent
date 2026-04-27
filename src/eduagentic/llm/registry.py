@@ -93,6 +93,46 @@ class ModelRegistry:
             await self.refresh()
         return self._models.get(endpoint_name, [])
 
+    @staticmethod
+    def _endpoint_supports(endpoint_config: EndpointConfig, capability: str) -> bool:
+        if capability == "multimodal":
+            return endpoint_config.capability == "multimodal" or endpoint_config.supports_vision
+        if capability == "text":
+            return endpoint_config.capability in {"text", "multimodal"}
+        return endpoint_config.capability == capability
+
+    async def _pick_configured_model(
+        self,
+        *,
+        capability: str,
+        endpoint: str,
+        endpoint_config: EndpointConfig,
+        field_name: str,
+        strict: bool,
+    ) -> ModelDescriptor | None:
+        model_id = getattr(endpoint_config, field_name)
+        if not model_id or not self._endpoint_supports(endpoint_config, capability):
+            return None
+        models = await self.get_models(endpoint)
+        for model in models:
+            if model.model_id == model_id:
+                return model
+        if models:
+            if strict:
+                available = ", ".join(sorted(model.model_id for model in models))
+                raise LookupError(
+                    f"Configured {field_name} {model_id!r} for endpoint {endpoint!r} "
+                    f"was not advertised by {endpoint_config.base_url}/models. "
+                    f"Available ids: {available}"
+                )
+            return None
+        return ModelDescriptor(
+            endpoint=endpoint,
+            model_id=model_id,
+            capability=endpoint_config.capability,
+            raw={"id": model_id, field_name: True, "unverified": True},
+        )
+
     async def pick_model(
         self,
         *,
@@ -105,23 +145,34 @@ class ModelRegistry:
         # Honor endpoint.pinned_model first: if any candidate endpoint declares a
         # pinned model, return exactly that model id. This bypasses the
         # prefer_fast rank heuristic so dual-backbone experiments can force a
-        # specific backbone (e.g. Qwen3.5-4B or Qwen3.6-27B-FP8) for every
+        # specific backbone (e.g. Qwen3.5-4B or Qwen3.5-27B-FP8) for every
         # agent in the pipeline.
         for endpoint in endpoints:
             endpoint_config = self.config.endpoints.get(endpoint)
-            if endpoint_config is None or not endpoint_config.pinned_model:
+            if endpoint_config is None:
                 continue
-            pinned = endpoint_config.pinned_model
-            models = await self.get_models(endpoint)
-            for model in models:
-                if model.model_id == pinned:
-                    return model
-            return ModelDescriptor(
+            descriptor = await self._pick_configured_model(
+                capability=capability,
                 endpoint=endpoint,
-                model_id=pinned,
-                capability=endpoint_config.capability,
-                raw={"id": pinned, "pinned": True},
+                endpoint_config=endpoint_config,
+                field_name="pinned_model",
+                strict=True,
             )
+            if descriptor is not None:
+                return descriptor
+        for endpoint in endpoints:
+            endpoint_config = self.config.endpoints.get(endpoint)
+            if endpoint_config is None:
+                continue
+            descriptor = await self._pick_configured_model(
+                capability=capability,
+                endpoint=endpoint,
+                endpoint_config=endpoint_config,
+                field_name="default_model",
+                strict=False,
+            )
+            if descriptor is not None:
+                return descriptor
         for endpoint in endpoints:
             endpoint_config = self.config.endpoints.get(endpoint)
             models = await self.get_models(endpoint)
