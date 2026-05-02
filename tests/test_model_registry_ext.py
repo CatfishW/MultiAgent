@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from eduagentic.config import AppConfig, EndpointConfig
-from eduagentic.core.contracts import ModelResponse
+from eduagentic.core.contracts import ModelMessage, ModelResponse
 from eduagentic.llm.openai_compat import OpenAICompatClient
 from eduagentic.llm.registry import ModelDescriptor, ModelRegistry
 
@@ -44,6 +44,51 @@ def test_openai_compat_extract_text():
     client = OpenAICompatClient(base_url="https://example.invalid/v1")
     payload = {"choices": [{"message": {"content": "hello world"}}]}
     assert client._extract_text(payload) == "hello world"
+
+
+@pytest.mark.asyncio
+async def test_openai_compat_cache_hit_reports_served_latency(monkeypatch, tmp_path):
+    calls = 0
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {
+                "choices": [{"message": {"content": "cached answer"}}],
+                "usage": {"prompt_tokens": 3, "completion_tokens": 2, "total_tokens": 5},
+            }
+
+    class FakeAsyncClient:
+        def __init__(self, *args, **kwargs):
+            return None
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def post(self, *args, **kwargs):
+            nonlocal calls
+            calls += 1
+            return FakeResponse()
+
+    monkeypatch.setattr("eduagentic.llm.openai_compat.httpx.AsyncClient", FakeAsyncClient)
+    client = OpenAICompatClient(base_url="https://example.invalid/v1", cache_dir=str(tmp_path))
+    messages = [ModelMessage(role="user", content="same request")]
+
+    first = await client.chat(model="m", messages=messages)
+    second = await client.chat(model="m", messages=messages)
+
+    assert calls == 1
+    assert first.text == second.text == "cached answer"
+    assert second.raw["_cache_hit"] == "memory"
+    assert second.raw["_cached_original_latency_ms"] == first.latency_ms
+    assert second.latency_ms is not None
+    assert first.latency_ms is not None
+    assert second.latency_ms <= 1
 
 
 @pytest.mark.asyncio

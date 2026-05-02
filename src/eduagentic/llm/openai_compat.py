@@ -66,6 +66,15 @@ class OpenAICompatClient:
     def _cache_key(self, payload: dict[str, Any]) -> str:
         return stable_hash(self.base_url, self.chat_path, payload)
 
+    def _response_from_cache(self, payload: dict[str, Any], *, source: str, started: float) -> ModelResponse:
+        response_payload = dict(payload)
+        raw = response_payload.get("raw")
+        response_payload["raw"] = dict(raw) if isinstance(raw, dict) else {"cached_raw": raw}
+        response_payload["raw"]["_cache_hit"] = source
+        response_payload["raw"]["_cached_original_latency_ms"] = response_payload.get("latency_ms")
+        response_payload["latency_ms"] = int((time.perf_counter() - started) * 1000)
+        return ModelResponse(**response_payload)
+
     def _normalize_messages(self, messages: list[ModelMessage | dict[str, Any]]) -> list[dict[str, Any]]:
         normalized: list[dict[str, Any]] = []
         for message in messages:
@@ -139,14 +148,15 @@ class OpenAICompatClient:
 
         cache_key = self._cache_key(payload)
         if use_cache:
+            cache_started = time.perf_counter()
             memory_hit = self.memory_cache.get(cache_key)
             if memory_hit is not None:
-                return ModelResponse(**memory_hit)
+                return self._response_from_cache(memory_hit, source="memory", started=cache_started)
             if self.disk_cache:
                 disk_hit = self.disk_cache.get(cache_key)
                 if disk_hit is not None:
                     self.memory_cache.set(cache_key, disk_hit)
-                    return ModelResponse(**disk_hit)
+                    return self._response_from_cache(disk_hit, source="disk", started=cache_started)
 
         raw: dict[str, Any] | None = None
         latency_ms = 0

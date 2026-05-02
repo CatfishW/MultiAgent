@@ -144,12 +144,16 @@ class BasePipeline:
         retrieval_query_count = 0.0
         tool_call_count = 0.0
         tool_time_ms = 0.0
+        model_cache_hits = 0.0
 
         for output in agent_outputs.values():
             if output.latency_ms is not None:
                 agent_time_ms += max(0.0, self._safe_float(output.latency_ms, 0.0))
 
             artifacts = output.artifacts if isinstance(output.artifacts, dict) else {}
+            raw = artifacts.get("raw")
+            if isinstance(raw, dict) and raw.get("_cache_hit"):
+                model_cache_hits += 1.0
             usage = artifacts.get("usage")
             if isinstance(usage, dict):
                 llm_call_count += 1.0
@@ -193,6 +197,7 @@ class BasePipeline:
             "retrieval_query_count": retrieval_query_count,
             "tool_call_count": tool_call_count,
             "tool_time_ms": tool_time_ms,
+            "model_cache_hits": model_cache_hits,
             "retrieved_chunks": retrieved_chunk_count,
             "trace_event_count": trace_event_count,
             "complexity_units": complexity_units,
