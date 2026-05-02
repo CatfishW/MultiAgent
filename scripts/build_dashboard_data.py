@@ -322,9 +322,15 @@ def _extract_thinking_budget(meta: dict[str, Any]) -> int | None:
         value = text_extra.get("extra_body", {}).get("thinking_budget")
         if isinstance(value, int):
             return value
+        value = text_extra.get("qwen_reasoning_budget")
+        if isinstance(value, int):
+            return value
     vision_extra = meta.get("vision_chat_extra")
     if isinstance(vision_extra, dict):
         value = vision_extra.get("extra_body", {}).get("thinking_budget")
+        if isinstance(value, int):
+            return value
+        value = vision_extra.get("qwen_reasoning_budget")
         if isinstance(value, int):
             return value
     return None
@@ -475,22 +481,43 @@ def _combined_log_segments(path: Path) -> dict[str, dict[str, Any]]:
     return segments
 
 
+def _agentic_rag_log_segments(root_dir: Path) -> tuple[dict[str, dict[str, Any]], float, dict[str, Path]]:
+    log_dir = root_dir / "logs/experiments/agentic_rag"
+    if not log_dir.exists():
+        return {}, 0.0, {}
+
+    segments: dict[str, dict[str, Any]] = {}
+    source_files: dict[str, Path] = {}
+    latest_mtime = 0.0
+    for log_file in sorted(log_dir.glob("*.log")):
+        latest_mtime = max(latest_mtime, log_file.stat().st_mtime)
+        for tag, segment in _combined_log_segments(log_file).items():
+            existing = segments.get(tag)
+            existing_len = len(existing.get("lines", [])) if isinstance(existing, dict) else -1
+            segment_len = len(segment.get("lines", []))
+            # Prefer the log that actually contains the active/completed run for a tag.
+            if existing is None or segment.get("done") or segment_len >= existing_len:
+                segments[tag] = segment
+                source_files[tag] = log_file
+    return segments, latest_mtime, source_files
+
+
 def _append_agentic_rag_sessions(
     *,
     root_dir: Path,
     sessions: list[dict[str, Any]],
     by_dataset: dict[str, list[dict[str, Any]]],
 ) -> None:
-    log_file = root_dir / "logs/experiments/agentic_rag/both_models.log"
-    if not log_file.exists():
+    segments, latest_log_mtime, source_files = _agentic_rag_log_segments(root_dir)
+    if not segments:
         return
-    segments = _combined_log_segments(log_file)
-    log_mtime = log_file.stat().st_mtime
     active_tags = set()
     for idx, spec in enumerate(AGENTIC_RAG_RUNS):
         tag = spec["tag"]
         segment = segments.get(tag, {})
         lines = list(segment.get("lines") or [])
+        log_file = source_files.get(tag, root_dir / "logs/experiments/agentic_rag/both_models.log")
+        log_mtime = log_file.stat().st_mtime if log_file.exists() else latest_log_mtime
         result_file = root_dir / spec["result_file"]
         result_payload = _load_json(result_file)
         result = result_payload.get("result", {}) if isinstance(result_payload, dict) else {}
@@ -561,7 +588,7 @@ def _append_agentic_rag_sessions(
             "failed_records": failed_count,
             "summary": summary,
             "metric_tiles": _metric_tiles(summary),
-            "status_reason": "complete" if status == "finished" else ("queued after earlier Agentic RAG runs" if status == "queued" else "screen: agentic_rag_both_models"),
+            "status_reason": "complete" if status == "finished" else ("queued after earlier Agentic RAG runs" if status == "queued" else f"screen log: {log_file.name}"),
             "score": round(score, 4),
             "result_file": str(result_file),
             "log_file": str(log_file),
