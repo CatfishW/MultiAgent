@@ -30,6 +30,13 @@ class TutorAgent(BaseAgent):
             parts.append(f"Operating plan:\n{context.plan_text}")
         if context.rubric_summary:
             parts.append(f"Answer criteria:\n{context.rubric_summary}")
+        tool_observation_blocks: list[str] = []
+        for value in context.notes.get("tool_observations", []):
+            text = str(value).strip()
+            if text:
+                tool_observation_blocks.append(text)
+        if tool_observation_blocks:
+            parts.append("Tool observations:\n" + "\n".join(tool_observation_blocks[:4]))
         if context.retrieved_chunks:
             evidence = "\n\n".join(
                 f"[{chunk.doc_id}] {chunk.title}\n{chunk.text}" for chunk in context.retrieved_chunks

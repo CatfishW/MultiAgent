@@ -27,6 +27,7 @@ pipeline:
   enable_rubric_agent: true
   enable_diagnoser: true
   enable_planner_llm: true
+  enable_tool_calls: true
   use_fast_rule_planner: false
   parallel_specialists: true
 

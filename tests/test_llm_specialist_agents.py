@@ -17,6 +17,7 @@ from eduagentic.retrieval.corpus import SourceDocument, chunk_documents
 from eduagentic.retrieval.index import HybridIndex
 from eduagentic.retrieval.packer import ContextPacker
 from eduagentic.retrieval.reranker import LightweightReranker
+from eduagentic.tools import ContextToolExecutor
 
 
 class RecordingChatClient:
@@ -99,6 +100,7 @@ async def test_specialist_agents_are_llm_backed_when_client_configured() -> None
         reranker=LightweightReranker(),
         packer=ContextPacker(max_chars=800),
     )
+    deps.tools = ContextToolExecutor(deps)
     context = _context(deps)
 
     planner = await PlannerAgent(deps).run(context)
@@ -117,6 +119,9 @@ async def test_specialist_agents_are_llm_backed_when_client_configured() -> None
     assert planner.artifacts["mode"] == "llm"
     assert diagnoser.artifacts["mode"] == "llm"
     assert rubric.artifacts["mode"] == "llm"
+    assert planner.artifacts["tool_observations"]
+    assert diagnoser.artifacts["tool_observations"]
+    assert rubric.artifacts["tool_observations"]
     assert retriever.artifacts["mode"] == "llm"
     assert tutor.text == "LLM_FINAL"
     assert critic.text == "LLM_FINAL"

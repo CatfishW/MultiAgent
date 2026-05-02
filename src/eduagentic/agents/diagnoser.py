@@ -7,6 +7,8 @@ from typing import Any
 from ..core.contracts import AgentResult, ModelMessage, StudentState
 from ..ml.student_state import StudentStateTracker
 from ..prompts.templates import STATE_SYSTEM_PROMPT
+from ..tools import render_tool_observations
+from ..tools.context_tools import normalize_tool_calls
 from .base import AgentContext, BaseAgent
 
 
@@ -29,7 +31,7 @@ class DiagnoserAgent(BaseAgent):
             lines.extend([f"- {item}" for item in state.misconceptions[:3]])
         return state, "\n".join(lines)
 
-    def _render_prompt(self, context: AgentContext) -> str:
+    def _render_prompt(self, context: AgentContext, tool_observations: list[Any] | None = None) -> str:
         example = context.example
         parts = [
             f"Domain or dataset: {example.dataset_name}",
@@ -42,6 +44,8 @@ class DiagnoserAgent(BaseAgent):
             parts.append(f"Inline context excerpt:\n{example.context_text[:1200]}")
         if example.rubric:
             parts.append("Explicit criteria:\n" + "\n".join(f"- {item}" for item in example.rubric[:8]))
+        if tool_observations:
+            parts.append("Available tool observations:\n" + render_tool_observations(tool_observations, max_chars=700))
         parts.append("Infer only visible user/task state. Do not infer demographics, identity, or persistent traits.")
         return "\n\n".join(parts)
 
@@ -119,11 +123,18 @@ class DiagnoserAgent(BaseAgent):
                 artifacts={"student_state": fallback_state, "task_state": fallback_state, "mode": "heuristic_fallback"},
             )
 
+        prompt_tool_observations = []
+        if self.deps.tools is not None:
+            prompt_tool_observations = self.deps.tools.execute(
+                context,
+                self.deps.tools.default_calls_for_role(context, self.role_name),
+                max_calls=1,
+            )
         response = await self.deps.text_client.chat(
             model=self.deps.text_model,
             messages=[
                 ModelMessage(role="system", content=STATE_SYSTEM_PROMPT),
-                ModelMessage(role="user", content=self._render_prompt(context)),
+                ModelMessage(role="user", content=self._render_prompt(context, prompt_tool_observations)),
             ],
             temperature=0.0,
             max_tokens=280,
@@ -140,10 +151,27 @@ class DiagnoserAgent(BaseAgent):
             text = self._render_state(state)
             confidence = 0.84
             mode = "llm"
+        tool_observations = list(prompt_tool_observations)
+        if self.deps.tools is not None and payload is not None:
+            calls = normalize_tool_calls(
+                payload.get("tool_calls"),
+                allowed={"inspect_dialogue_state", "extract_key_terms"},
+                max_calls=1,
+            )
+            if calls:
+                tool_observations = self.deps.tools.execute(context, calls, max_calls=1)
+                mode = f"{mode}_with_tools"
         return AgentResult(
             role=self.role_name,
             text=text,
             confidence=confidence,
-            artifacts={"student_state": state, "task_state": state, "usage": response.usage, "raw": response.raw, "mode": mode},
+            artifacts={
+                "student_state": state,
+                "task_state": state,
+                "tool_observations": tool_observations,
+                "usage": response.usage,
+                "raw": response.raw,
+                "mode": mode,
+            },
             latency_ms=response.latency_ms,
         )

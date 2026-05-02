@@ -13,6 +13,7 @@ from .ml.student_state import StudentStateTracker
 from .orchestration.pipelines import AgenticRAGPipeline, ClassicalRAGPipeline, HybridFastPipeline, MultiAgentNoRAGPipeline, SingleAgentNoRAGPipeline
 from .retrieval import ContextPacker, HybridIndex, LightweightReranker, chunk_documents, load_documents_from_path
 from .agents.base import AgentDependencies
+from .tools import ContextToolExecutor
 
 
 class ConferenceEduSystem:
@@ -28,6 +29,8 @@ class ConferenceEduSystem:
             reranker=LightweightReranker(),
             packer=ContextPacker(max_chars=self.config.budget.max_context_chars, mmr_lambda=self.config.retriever.mmr_lambda),
         )
+        if self.config.pipeline.enable_tool_calls:
+            self._deps.tools = ContextToolExecutor(self._deps)
         self._pipelines = None
 
     async def initialize_models(self) -> None:

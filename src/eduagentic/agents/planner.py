@@ -6,6 +6,8 @@ from typing import Any
 
 from ..core.contracts import AgentResult, ModelMessage, TaskRegime
 from ..prompts.templates import PLANNER_SYSTEM_PROMPT
+from ..tools import render_tool_observations
+from ..tools.context_tools import normalize_tool_calls
 from ..utils.text import tokenize
 from .base import AgentContext, BaseAgent
 
@@ -58,7 +60,7 @@ class PlannerAgent(BaseAgent):
             steps.insert(1, "Use retrieval only for the parts that need grounding.")
         return "\n".join(f"{idx + 1}. {step}" for idx, step in enumerate(steps)), unique_queries[: context.budget.max_retrieval_queries]
 
-    def _render_prompt(self, context: AgentContext) -> str:
+    def _render_prompt(self, context: AgentContext, tool_observations: list[Any] | None = None) -> str:
         example = context.example
         parts = [
             f"Domain or dataset: {example.dataset_name}",
@@ -73,6 +75,8 @@ class PlannerAgent(BaseAgent):
         if example.dialogue_history:
             history = "\n".join(f"{turn.role}: {turn.text}" for turn in example.dialogue_history[-6:])
             parts.append(f"Recent interaction:\n{history}")
+        if tool_observations:
+            parts.append("Available tool observations:\n" + render_tool_observations(tool_observations, max_chars=900))
         parts.append(
             "Create a compact response strategy and retrieval queries. "
             f"Return at most {context.budget.max_retrieval_queries} queries."
@@ -131,11 +135,18 @@ class PlannerAgent(BaseAgent):
                 artifacts={"queries": fallback_queries, "mode": "heuristic_fallback"},
             )
 
+        prompt_tool_observations = []
+        if self.deps.tools is not None:
+            prompt_tool_observations = self.deps.tools.execute(
+                context,
+                self.deps.tools.default_calls_for_role(context, self.role_name),
+                max_calls=2,
+            )
         response = await self.deps.text_client.chat(
             model=self.deps.text_model,
             messages=[
                 ModelMessage(role="system", content=PLANNER_SYSTEM_PROMPT),
-                ModelMessage(role="user", content=self._render_prompt(context)),
+                ModelMessage(role="user", content=self._render_prompt(context, prompt_tool_observations)),
             ],
             temperature=0.0,
             max_tokens=320,
@@ -150,10 +161,26 @@ class PlannerAgent(BaseAgent):
             plan_text, queries = self._normalize_llm_plan(payload, context)
             confidence = 0.86
             mode = "llm"
+        tool_observations = list(prompt_tool_observations)
+        if self.deps.tools is not None and payload is not None:
+            calls = normalize_tool_calls(
+                payload.get("tool_calls"),
+                allowed={"extract_key_terms", "inspect_inline_context", "list_answer_criteria"},
+                max_calls=2,
+            )
+            if calls:
+                tool_observations = self.deps.tools.execute(context, calls, max_calls=2)
+                mode = f"{mode}_with_tools"
         return AgentResult(
             role=self.role_name,
             text=plan_text,
             confidence=confidence,
-            artifacts={"queries": queries, "usage": response.usage, "raw": response.raw, "mode": mode},
+            artifacts={
+                "queries": queries,
+                "tool_observations": tool_observations,
+                "usage": response.usage,
+                "raw": response.raw,
+                "mode": mode,
+            },
             latency_ms=response.latency_ms,
         )

@@ -24,6 +24,7 @@ class AgentDependencies:
     retriever: HybridIndex | None = None
     reranker: LightweightReranker | None = None
     packer: ContextPacker | None = None
+    tools: Any | None = None
 
 
 @dataclass(slots=True)

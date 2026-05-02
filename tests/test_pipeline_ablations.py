@@ -27,6 +27,7 @@ from eduagentic.retrieval.corpus import SourceDocument, chunk_documents
 from eduagentic.retrieval.index import HybridIndex
 from eduagentic.retrieval.packer import ContextPacker
 from eduagentic.retrieval.reranker import LightweightReranker
+from eduagentic.tools import ContextToolExecutor
 
 
 class _FakeChatClient:
@@ -43,7 +44,7 @@ class _FakeChatClient:
 
 
 def _make_deps(index: HybridIndex | None = None) -> AgentDependencies:
-    return AgentDependencies(
+    deps = AgentDependencies(
         text_client=_FakeChatClient(),
         vision_client=_FakeChatClient(),
         text_model="tiny-text",
@@ -52,6 +53,8 @@ def _make_deps(index: HybridIndex | None = None) -> AgentDependencies:
         reranker=LightweightReranker(),
         packer=ContextPacker(max_chars=800),
     )
+    deps.tools = ContextToolExecutor(deps)
+    return deps
 
 
 def _make_index() -> HybridIndex:

@@ -10,6 +10,7 @@ from eduagentic.retrieval.corpus import SourceDocument, chunk_documents
 from eduagentic.retrieval.index import HybridIndex
 from eduagentic.retrieval.packer import ContextPacker
 from eduagentic.retrieval.reranker import LightweightReranker
+from eduagentic.tools import ContextToolExecutor
 
 
 class FakeChatClient:
@@ -38,6 +39,7 @@ async def test_hybrid_pipeline_smoke():
         reranker=LightweightReranker(),
         packer=ContextPacker(max_chars=800),
     )
+    deps.tools = ContextToolExecutor(deps)
     pipeline = HybridFastPipeline(DEFAULT_CONFIG, deps)
     example = BenchmarkExample(
         example_id="1",
@@ -61,3 +63,5 @@ async def test_hybrid_pipeline_smoke():
     assert response.metrics["llm_call_count"] >= 1
     assert response.metrics["total_tokens"] >= 15
     assert response.metrics["complexity_units"] > 0
+    assert response.metrics["tool_call_count"] >= 1
+    assert response.agent_outputs["retriever"].artifacts["mode"] == "tool_search"

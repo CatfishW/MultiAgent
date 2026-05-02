@@ -83,6 +83,32 @@ class BasePipeline:
         except Exception:
             return default
 
+    def _render_tool_notes(self, outputs: dict[str, AgentResult]) -> list[str]:
+        notes: list[str] = []
+        for name in ("planner", "diagnoser", "rubric", "retriever"):
+            output = outputs.get(name)
+            if output is None:
+                continue
+            artifacts = output.artifacts if isinstance(output.artifacts, dict) else {}
+            for obs in artifacts.get("tool_observations", []) or []:
+                content = str(getattr(obs, "content", "")).strip()
+                obs_name = str(getattr(obs, "name", name)).strip() or name
+                if content:
+                    notes.append(f"{obs_name}: {content[:700]}")
+                if len(notes) >= 4:
+                    return notes
+        return notes
+
+    def _tool_observation_metrics(self, outputs: dict[str, AgentResult]) -> tuple[float, float]:
+        count = 0.0
+        latency_ms = 0.0
+        for output in outputs.values():
+            artifacts = output.artifacts if isinstance(output.artifacts, dict) else {}
+            for obs in artifacts.get("tool_observations", []) or []:
+                count += 1.0
+                latency_ms += max(0.0, self._safe_float(getattr(obs, "latency_ms", 0), 0.0))
+        return count, latency_ms
+
     def _usage_token_counts(self, usage: dict[str, Any]) -> tuple[float, float, float]:
         prompt_tokens = self._safe_float(
             usage.get("prompt_tokens", usage.get("input_tokens", usage.get("prompt_token_count", 0.0))),
@@ -116,6 +142,8 @@ class BasePipeline:
         api_time_ms = 0.0
         agent_time_ms = 0.0
         retrieval_query_count = 0.0
+        tool_call_count = 0.0
+        tool_time_ms = 0.0
 
         for output in agent_outputs.values():
             if output.latency_ms is not None:
@@ -136,6 +164,7 @@ class BasePipeline:
             if isinstance(queries, list):
                 retrieval_query_count += float(len([query for query in queries if str(query).strip()]))
 
+        tool_call_count, tool_time_ms = self._tool_observation_metrics(agent_outputs)
         retrieved_chunk_count = float(len(retrieved_chunks))
         trace_event_count = float(len(trace))
         complexity_units = (
@@ -144,6 +173,7 @@ class BasePipeline:
             + (retrieved_chunk_count * 90.0)
             + (float(len(agent_outputs)) * 240.0)
             + (trace_event_count * 30.0)
+            + (tool_call_count * 45.0)
         )
         non_api_time_ms = max(0.0, total_latency_ms - api_time_ms)
         api_time_ratio = (api_time_ms / total_latency_ms) if total_latency_ms > 0 else 0.0
@@ -161,6 +191,8 @@ class BasePipeline:
             "completion_tokens": completion_tokens,
             "total_tokens": total_tokens,
             "retrieval_query_count": retrieval_query_count,
+            "tool_call_count": tool_call_count,
+            "tool_time_ms": tool_time_ms,
             "retrieved_chunks": retrieved_chunk_count,
             "trace_event_count": trace_event_count,
             "complexity_units": complexity_units,
@@ -210,7 +242,17 @@ class ClassicalRAGPipeline(BasePipeline):
         agent_outputs: dict[str, AgentResult] = {}
         context = self._empty_context(example, route)
         if self.deps.retriever is not None:
-            retrieval = await self.retriever.run(context)
+            if self.deps.tools is not None:
+                chunks, rendered, observations = self.deps.tools.retrieve_with_queries(context, [example.question])
+                retrieval = AgentResult(
+                    role="retriever",
+                    text=rendered,
+                    confidence=0.84 if chunks else 0.25,
+                    citations=[chunk.doc_id for chunk in chunks],
+                    artifacts={"chunks": chunks, "queries": [example.question], "tool_observations": observations, "mode": "classic_tool_search"},
+                )
+            else:
+                retrieval = await self.retriever.run(context)
             agent_outputs["retriever"] = retrieval
             context = replace(context, retrieved_chunks=retrieval.artifacts.get("chunks", []))
             self._record(trace, "retrieval", queries=retrieval.artifacts.get("queries", []), count=len(context.retrieved_chunks))
@@ -256,6 +298,7 @@ class AgenticRAGPipeline(BasePipeline):
             plan_text=initial.get("planner").text if "planner" in initial else None,
             search_queries=search_queries,
             rubric_summary=rubric_summary,
+            notes={"tool_observations": self._render_tool_notes(initial)},
         )
         self._record(trace, "pre_tutor", roles=list(initial.keys()))
         return context, initial, trace
@@ -263,9 +306,23 @@ class AgenticRAGPipeline(BasePipeline):
     async def run(self, example: BenchmarkExample, route: RouteDecision) -> PipelineResponse:
         started = time.perf_counter()
         context, agent_outputs, trace = await self._prepare_context(example, route)
-        retrieval = await self.retriever.run(context)
+        if self.deps.tools is not None and self.deps.retriever is not None:
+            chunks, rendered, observations = self.deps.tools.retrieve_with_queries(context, context.search_queries or [example.question])
+            retrieval = AgentResult(
+                role="retriever",
+                text=rendered,
+                confidence=0.84 if chunks else 0.25,
+                citations=[chunk.doc_id for chunk in chunks],
+                artifacts={"chunks": chunks, "queries": context.search_queries or [example.question], "tool_observations": observations, "mode": "tool_search"},
+            )
+        else:
+            retrieval = await self.retriever.run(context)
         agent_outputs["retriever"] = retrieval
-        context = replace(context, retrieved_chunks=retrieval.artifacts.get("chunks", []))
+        context = replace(
+            context,
+            retrieved_chunks=retrieval.artifacts.get("chunks", []),
+            notes={"tool_observations": self._render_tool_notes(agent_outputs)},
+        )
         self._record(trace, "retrieval", queries=context.search_queries, count=len(context.retrieved_chunks))
         tutor = await self.tutor.run(context)
         agent_outputs["tutor"] = tutor
@@ -320,16 +377,27 @@ class MultiAgentNoRAGPipeline(BasePipeline):
             plan_text=initial.get("planner").text if "planner" in initial else None,
             search_queries=initial.get("planner", AgentResult(role="planner", text="", artifacts={})).artifacts.get("queries", [example.question]),
             rubric_summary=initial.get("rubric").text if "rubric" in initial else None,
+            notes={"tool_observations": self._render_tool_notes(initial)},
         )
         # Ablation: non_rag_enable_retrieval lets reviewers separate the grounding
         # effect from the coordination effect by running the exact same multi-agent
         # coordination stack with retrieval turned on.
         retrieved_chunks: list = []
         if getattr(self.config.pipeline, "non_rag_enable_retrieval", False) and self.deps.retriever is not None:
-            retrieval = await self.retriever.run(context)
+            if self.deps.tools is not None:
+                chunks, rendered, observations = self.deps.tools.retrieve_with_queries(context, context.search_queries or [example.question])
+                retrieval = AgentResult(
+                    role="retriever",
+                    text=rendered,
+                    confidence=0.84 if chunks else 0.25,
+                    citations=[chunk.doc_id for chunk in chunks],
+                    artifacts={"chunks": chunks, "queries": context.search_queries or [example.question], "tool_observations": observations, "mode": "tool_search"},
+                )
+            else:
+                retrieval = await self.retriever.run(context)
             initial["retriever"] = retrieval
             retrieved_chunks = list(retrieval.artifacts.get("chunks", []) or [])
-            context = replace(context, retrieved_chunks=retrieved_chunks)
+            context = replace(context, retrieved_chunks=retrieved_chunks, notes={"tool_observations": self._render_tool_notes(initial)})
             self._record(trace, "retrieval", queries=context.search_queries, count=len(retrieved_chunks))
         self._record(trace, "pre_tutor", roles=list(initial.keys()))
         tutor = await self.tutor.run(context)
@@ -427,6 +495,7 @@ class HybridFastPipeline(BasePipeline):
             plan_text=initial.get("planner").text if "planner" in initial else None,
             search_queries=initial.get("planner", AgentResult(role="planner", text="", artifacts={})).artifacts.get("queries", [example.question]),
             rubric_summary=initial.get("rubric").text if "rubric" in initial else None,
+            notes={"tool_observations": self._render_tool_notes(initial)},
         )
         agent_outputs = dict(initial)
         # Ablation: hybrid_force_retrieval bypasses the conditional retrieval gate
@@ -434,19 +503,48 @@ class HybridFastPipeline(BasePipeline):
         force_retrieval = bool(getattr(self.config.pipeline, "hybrid_force_retrieval", False))
         should_retrieve = (route.require_retrieval or force_retrieval) and self.deps.retriever is not None
         if should_retrieve:
-            retrieval = await self.retriever.run(context)
+            if self.deps.tools is not None:
+                chunks, rendered, observations = self.deps.tools.retrieve_with_queries(context, context.search_queries or [example.question])
+                retrieval = AgentResult(
+                    role="retriever",
+                    text=rendered,
+                    confidence=0.84 if chunks else 0.25,
+                    citations=[chunk.doc_id for chunk in chunks],
+                    artifacts={"chunks": chunks, "queries": context.search_queries or [example.question], "tool_observations": observations, "mode": "tool_search"},
+                )
+            else:
+                retrieval = await self.retriever.run(context)
             agent_outputs["retriever"] = retrieval
-            context = replace(context, retrieved_chunks=retrieval.artifacts.get("chunks", []))
+            context = replace(
+                context,
+                retrieved_chunks=retrieval.artifacts.get("chunks", []),
+                notes={"tool_observations": self._render_tool_notes(agent_outputs)},
+            )
             self._record(trace, "retrieval", queries=context.search_queries, count=len(context.retrieved_chunks))
         tutor = await self.tutor.run(context)
         agent_outputs["tutor"] = tutor
         answer = tutor
         fallback_threshold = float(getattr(self.config.router, "hybrid_retrieval_fallback", 0.45))
         if not context.retrieved_chunks and self.deps.retriever is not None and route.scores.get("evidence", 0.0) >= fallback_threshold:
-            retrieval = await self.retriever.run(replace(context, search_queries=[example.question]))
+            fallback_context = replace(context, search_queries=[example.question])
+            if self.deps.tools is not None:
+                chunks, rendered, observations = self.deps.tools.retrieve_with_queries(fallback_context, [example.question])
+                retrieval = AgentResult(
+                    role="retriever_fallback",
+                    text=rendered,
+                    confidence=0.84 if chunks else 0.25,
+                    citations=[chunk.doc_id for chunk in chunks],
+                    artifacts={"chunks": chunks, "queries": [example.question], "tool_observations": observations, "mode": "tool_search_fallback"},
+                )
+            else:
+                retrieval = await self.retriever.run(fallback_context)
             if retrieval.artifacts.get("chunks"):
                 agent_outputs["retriever_fallback"] = retrieval
-                context = replace(context, retrieved_chunks=retrieval.artifacts.get("chunks", []))
+                context = replace(
+                    context,
+                    retrieved_chunks=retrieval.artifacts.get("chunks", []),
+                    notes={"tool_observations": self._render_tool_notes(agent_outputs)},
+                )
                 tutor = await self.tutor.run(context)
                 agent_outputs["tutor_fallback"] = tutor
                 answer = tutor

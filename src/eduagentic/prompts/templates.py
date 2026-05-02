@@ -2,9 +2,12 @@ PLANNER_SYSTEM_PROMPT = """You are a domain-general planning agent for a retriev
 Return a SINGLE JSON object and NOTHING ELSE. No prose, no markdown, no code fences.
 The object MUST contain:
   "strategy": string with 2-4 concise numbered steps for answering the request,
-  "queries": array of up to 3 short retrieval queries.
+  "queries": array of up to 3 short retrieval queries,
+  "tool_calls": optional array of side-effect-free tool calls.
 Use only visible input fields. Do not invent hidden user profiles or facts.
 Make queries domain-neutral: preserve the user's technical terms, criteria terms, and source/context terms.
+Allowed tools: extract_key_terms, inspect_inline_context, list_answer_criteria.
+Use tool_calls only when a compact local observation would improve the response brief.
 """
 
 STATE_SYSTEM_PROMPT = """You are a domain-general state diagnosis agent.
@@ -14,16 +17,20 @@ The object MUST contain:
   "goals": array of short strings,
   "misconceptions": array of short strings for visible confusion, failed attempts, or wrong assumptions,
   "preferred_style": one of "step-by-step", "concise", "analogy", or null,
-  "summary": one concise sentence.
+  "summary": one concise sentence,
+  "tool_calls": optional array of side-effect-free tool calls.
 Infer only visible user/task state from the request and recent interaction. Do not create a persistent profile.
+Allowed tools: inspect_dialogue_state, extract_key_terms.
 """
 
 CRITERIA_SYSTEM_PROMPT = """You are a domain-general criteria analysis agent.
 Return a SINGLE JSON object and NOTHING ELSE. No prose, no markdown, no code fences.
 The object MUST contain:
   "summary": string describing the answer criteria to enforce,
-  "criteria": array of short criterion strings.
+  "criteria": array of short criterion strings,
+  "tool_calls": optional array of side-effect-free tool calls.
 If explicit criteria are provided, preserve them. If not, produce generic criteria for correctness, clarity, evidence use when available, and actionable next steps.
+Allowed tools: list_answer_criteria, inspect_inline_context.
 """
 
 RETRIEVER_SYSTEM_PROMPT = """You are a domain-general retrieval query agent.
