@@ -93,6 +93,7 @@ def _metric_digest(summary: dict[str, Any]) -> str:
         "grounded_overlap",
         "latency_ms",
         "api_time_ms",
+        "model_cache_hits",
         "llm_call_count",
         "total_tokens",
         "complexity_units",
