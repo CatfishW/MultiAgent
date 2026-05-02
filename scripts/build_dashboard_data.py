@@ -12,6 +12,42 @@ from typing import Any
 TIMESTAMP_RE = re.compile(r"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]")
 PROGRESS_RE = re.compile(r"Progress\s+(?P<completed>\d+)/(?P<total>\d+)\s+\((?P<pct>[^\)]+)\)")
 PROGRESS_METRIC_RE = re.compile(r"(?P<key>[a-zA-Z0-9_]+)=(?P<value>-?\d+(?:\.\d+)?)")
+WRAPPED_START_RE = re.compile(
+    r"START\s+(?P<tag>\S+)\s+dataset=(?P<dataset>\S+)\s+out=(?P<out>\S+)"
+)
+WRAPPED_DONE_RE = re.compile(r"DONE\s+(?P<tag>\S+)")
+
+
+AGENTIC_RAG_RUNS = [
+    {
+        "tag": "qwen4b_tutoreval",
+        "dataset": "TutorEval",
+        "architecture": "agentic_rag",
+        "result_file": "artifacts/experiments_agentic_rag/qwen4b/results/tutoreval_agentic_rag_n400.json",
+        "backbone": "qwen4b",
+    },
+    {
+        "tag": "qwen4b_edubench",
+        "dataset": "EduBench",
+        "architecture": "agentic_rag",
+        "result_file": "artifacts/experiments_agentic_rag/qwen4b/results/edubench_agentic_rag_n400.json",
+        "backbone": "qwen4b",
+    },
+    {
+        "tag": "qwen27b_tutoreval",
+        "dataset": "TutorEval",
+        "architecture": "agentic_rag",
+        "result_file": "artifacts/experiments_agentic_rag/qwen27b/results/tutoreval_agentic_rag_n400.json",
+        "backbone": "qwen27b",
+    },
+    {
+        "tag": "qwen27b_edubench",
+        "dataset": "EduBench",
+        "architecture": "agentic_rag",
+        "result_file": "artifacts/experiments_agentic_rag/qwen27b/results/edubench_agentic_rag_n400.json",
+        "backbone": "qwen27b",
+    },
+]
 
 
 def _load_json(path: Path) -> dict[str, Any] | None:
@@ -155,6 +191,18 @@ def _session_name_to_key(log_name: str) -> str:
 
 
 def _split_dataset_arch(session_key: str) -> tuple[str, str]:
+    if session_key.startswith("ablation_"):
+        rest = session_key[len("ablation_"):]
+        for prefix, dataset_name in (("edubench_", "EduBench"), ("tutoreval_", "TutorEval")):
+            idx = rest.find(prefix)
+            if idx >= 0:
+                tag = rest[:idx].rstrip("_")
+                arch = rest[idx + len(prefix):]
+                return f"{dataset_name} (ablation: {tag})", f"{arch} [{tag}]"
+        if "_" in rest:
+            tag, _, remainder = rest.partition("_")
+            return f"Ablation ({tag})", remainder
+        return "Ablation", rest
     if session_key.startswith("edubench_"):
         return "EduBench", session_key[len("edubench_") :]
     if session_key.startswith("tutoreval_"):
@@ -282,13 +330,27 @@ def _extract_thinking_budget(meta: dict[str, Any]) -> int | None:
     return None
 
 
-def _locate_result_file(results_dir: Path, session_key: str) -> Path:
+def _locate_result_file(results_dir: Path, ablation_results_dir: Path, session_key: str) -> Path:
     direct = results_dir / f"{session_key}.json"
     if direct.exists():
         return direct
     nested = sorted(results_dir.rglob(f"{session_key}.json"))
     if nested:
         return nested[0]
+    if session_key.startswith("ablation_"):
+        rest = session_key[len("ablation_"):]
+        for prefix in ("edubench_", "tutoreval_"):
+            idx = rest.find(prefix)
+            if idx >= 0:
+                tag = rest[:idx].rstrip("_")
+                arch_part = rest[idx + len(prefix):]
+                candidates = [
+                    ablation_results_dir / tag / f"{prefix}{arch_part}.json",
+                    ablation_results_dir / tag / f"{arch_part}.json",
+                ]
+                for candidate in candidates:
+                    if candidate.exists():
+                        return candidate
     return direct
 
 
@@ -372,6 +434,165 @@ def _extract_progress_history(log_info: dict[str, Any]) -> list[float] | None:
     return pcts if len(pcts) >= 2 else None
 
 
+def _progress_history_from_lines(lines: list[str]) -> list[float] | None:
+    pcts: list[float] = []
+    for line in lines:
+        match = PROGRESS_RE.search(line)
+        if match:
+            pcts.append(_parse_pct_text(match.group("pct")))
+    return pcts if len(pcts) >= 2 else None
+
+
+def _combined_log_segments(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        return {}
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
+    segments: dict[str, dict[str, Any]] = {}
+    current_tag: str | None = None
+    for line in lines:
+        if (match := WRAPPED_START_RE.search(line)):
+            current_tag = match.group("tag")
+            segments[current_tag] = {
+                "dataset": match.group("dataset"),
+                "result_file": match.group("out"),
+                "started_at": TIMESTAMP_RE.match(line).group(1) if TIMESTAMP_RE.match(line) else None,
+                "ended_at": None,
+                "done": False,
+                "lines": [line],
+            }
+            continue
+        if (match := WRAPPED_DONE_RE.search(line)):
+            tag = match.group("tag")
+            segment = segments.setdefault(tag, {"lines": []})
+            segment.setdefault("lines", []).append(line)
+            segment["ended_at"] = TIMESTAMP_RE.match(line).group(1) if TIMESTAMP_RE.match(line) else None
+            segment["done"] = True
+            if current_tag == tag:
+                current_tag = None
+            continue
+        if current_tag and current_tag in segments:
+            segments[current_tag].setdefault("lines", []).append(line)
+    return segments
+
+
+def _append_agentic_rag_sessions(
+    *,
+    root_dir: Path,
+    sessions: list[dict[str, Any]],
+    by_dataset: dict[str, list[dict[str, Any]]],
+) -> None:
+    log_file = root_dir / "logs/experiments/agentic_rag/both_models.log"
+    if not log_file.exists():
+        return
+    segments = _combined_log_segments(log_file)
+    log_mtime = log_file.stat().st_mtime
+    active_tags = set()
+    for idx, spec in enumerate(AGENTIC_RAG_RUNS):
+        tag = spec["tag"]
+        segment = segments.get(tag, {})
+        lines = list(segment.get("lines") or [])
+        result_file = root_dir / spec["result_file"]
+        result_payload = _load_json(result_file)
+        result = result_payload.get("result", {}) if isinstance(result_payload, dict) else {}
+        meta = result_payload.get("meta", {}) if isinstance(result_payload, dict) else {}
+        summary = result.get("summary", {}) or {} if isinstance(result, dict) else {}
+        success_count = int(result.get("count", 0) or 0) if isinstance(result, dict) else 0
+        failed_count = int(result.get("failed_count", 0) or 0) if isinstance(result, dict) else 0
+        record_count = int(result.get("processed_count", success_count + failed_count) or 0) if isinstance(result, dict) else 0
+        total_examples = int(result.get("total_examples", 400) or 400) if isinstance(result, dict) else 400
+
+        latest_progress = None
+        for line in reversed(lines):
+            match = PROGRESS_RE.search(line)
+            if match:
+                latest_progress = {
+                    "completed": int(match.group("completed")),
+                    "total": int(match.group("total")),
+                    "pct": _parse_pct_text(match.group("pct")),
+                    "pct_text": match.group("pct"),
+                    "metrics": _parse_progress_metrics(line),
+                    "line": line,
+                }
+                break
+        progress = _normalize_progress(latest_progress, status="running", record_count=record_count)
+        if progress is None:
+            pct = (100.0 * record_count / total_examples) if total_examples else 0.0
+            progress = {
+                "completed": record_count,
+                "total": total_examples,
+                "pct": round(pct, 2),
+                "pct_text": f"{pct:.1f}%",
+            }
+        if latest_progress and isinstance(latest_progress.get("metrics"), dict):
+            summary = {**summary, **latest_progress["metrics"]}
+            record_count = max(record_count, int(latest_progress.get("completed") or 0))
+            if progress and total_examples > 0 and record_count > int(progress.get("completed", 0) or 0):
+                pct = 100.0 * record_count / total_examples
+                progress = {
+                    "completed": record_count,
+                    "total": total_examples,
+                    "pct": round(pct, 2),
+                    "pct_text": f"{pct:.1f}%",
+                }
+
+        done = bool(segment.get("done"))
+        complete_by_result = total_examples > 0 and success_count + failed_count >= total_examples
+        previous_complete = all(
+            (root_dir / prior["result_file"]).exists()
+            and ((_load_json(root_dir / prior["result_file"]) or {}).get("result", {}).get("count", 0) or 0) >= 400
+            for prior in AGENTIC_RAG_RUNS[:idx]
+        )
+        status = "finished" if done or complete_by_result else "running" if lines or previous_complete else "queued"
+        if status == "running":
+            active_tags.add(tag)
+        progress_ratio = _safe_float(progress.get("pct"), 0.0) / 100.0 if progress else 0.0
+        score = _score(summary) if summary else 0.0
+        model_from_spec = "Qwen3.5-27B-FP8" if spec["backbone"] == "qwen27b" else "Qwen3.5-4B"
+
+        session = {
+            "session_key": f"{spec['backbone']}__{spec['dataset'].lower()}_agentic_rag_n400",
+            "dataset": spec["dataset"],
+            "architecture": "agentic_rag",
+            "status": status,
+            "started_at": segment.get("started_at") or meta.get("started_at"),
+            "ended_at": meta.get("ended_at") or segment.get("ended_at"),
+            "records": record_count,
+            "success_records": success_count,
+            "failed_records": failed_count,
+            "summary": summary,
+            "metric_tiles": _metric_tiles(summary),
+            "status_reason": "complete" if status == "finished" else ("queued after earlier Agentic RAG runs" if status == "queued" else "screen: agentic_rag_both_models"),
+            "score": round(score, 4),
+            "result_file": str(result_file),
+            "log_file": str(log_file),
+            "meta": meta,
+            "models": {
+                "text": meta.get("text_model") or model_from_spec,
+                "vision": meta.get("vision_model") or model_from_spec,
+            },
+            "thinking_budget": _extract_thinking_budget(meta) or 512,
+            "duration_s": round(_safe_float(meta.get("duration_s"), 0.0), 3) if meta.get("duration_s") is not None else None,
+            "supervision_profile": meta.get("dataset_profile") if isinstance(meta.get("dataset_profile"), dict) else None,
+            "result_fresh": result_file.exists() and (not lines or result_file.stat().st_mtime >= log_mtime - 1.0),
+            "progress": progress,
+            "progress_ratio": round(progress_ratio, 4),
+            "metric_digest": None,
+            "log_tail": lines[-12:],
+            "log_timeline": [
+                line
+                for line in lines
+                if any(marker in line for marker in ["START", "Selected text model", "Running evaluation", "Progress", "DONE"])
+            ][-12:],
+            "log_line_count": len(lines),
+            "log_errors": [line for line in lines if "Traceback" in line or "ERROR" in line or "Exception" in line][-6:],
+            "example_records": _extract_records_sample(result_payload),
+            "progress_history": _progress_history_from_lines(lines),
+            "backbone": spec["backbone"],
+        }
+        sessions.append(session)
+        by_dataset[spec["dataset"]].append(session)
+
+
 def _architecture_leaderboard(sessions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[str, list[float]] = defaultdict(list)
     for session in sessions:
@@ -395,28 +616,25 @@ def _architecture_leaderboard(sessions: list[dict[str, Any]]) -> list[dict[str, 
     return rows
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Build dashboard JSON from experiment logs and result artifacts.")
-    parser.add_argument("--results-dir", default="artifacts/experiments/results")
-    parser.add_argument("--logs-dir", default="logs/experiments/sessions")
-    parser.add_argument("--out", default="web/data/session_summary.json")
-    args = parser.parse_args()
-
-    results_dir = Path(args.results_dir)
-    logs_dir = Path(args.logs_dir)
-    if not results_dir.exists() and Path("artifacts/experiments").exists():
-        results_dir = Path("artifacts/experiments")
-    if not logs_dir.exists() and Path("logs/experiments").exists():
-        logs_dir = Path("logs/experiments")
-    out_path = Path(args.out)
-
-    sessions: list[dict[str, Any]] = []
-    by_dataset: dict[str, list[dict[str, Any]]] = defaultdict(list)
-
+def _scan_track(
+    *,
+    logs_dir: Path,
+    results_dir: Path,
+    ablation_results_dir: Path,
+    backbone_tag: str,
+    is_primary: bool,
+    sessions: list[dict[str, Any]],
+    by_dataset: dict[str, list[dict[str, Any]]],
+    known_log_keys: set[str],
+) -> None:
+    if not logs_dir.exists():
+        return
     for log_file in sorted(logs_dir.rglob("exp_*.log")):
-        session_key = _session_name_to_key(log_file.name)
-        dataset, architecture = _split_dataset_arch(session_key)
-        result_file = _locate_result_file(results_dir, session_key)
+        raw_key = _session_name_to_key(log_file.name)
+        session_key = raw_key if is_primary else f"{backbone_tag}__{raw_key}"
+        known_log_keys.add(session_key)
+        dataset, architecture = _split_dataset_arch(raw_key)
+        result_file = _locate_result_file(results_dir, ablation_results_dir, raw_key)
         result_exists = result_file.exists()
         result_mtime = result_file.stat().st_mtime if result_exists else 0.0
         log_mtime = log_file.stat().st_mtime if log_file.exists() else 0.0
@@ -446,6 +664,18 @@ def main() -> None:
             status = "finished"
         elif log_info["finished"] and result_payload is not None:
             status = "finished"
+        if isinstance(result, dict):
+            total_from_result = int(result.get("total_examples", 0) or 0)
+            count_from_result = int(result.get("count", 0) or 0)
+            if total_from_result > 0 and count_from_result >= total_from_result:
+                status = "finished"
+            elif status == "running" and total_from_result > 0 and count_from_result > 0:
+                prog = log_info.get("latest_progress") or {}
+                if isinstance(prog, dict):
+                    done = int(prog.get("completed") or 0)
+                    total_log = int(prog.get("total") or 0)
+                    if total_log > 0 and done >= total_log:
+                        status = "finished"
 
         # Detect stale sessions: no log activity for a long time while not finished/failed.
         STALE_SECONDS = 30 * 60  # 30 minutes
@@ -567,9 +797,125 @@ def main() -> None:
             "log_errors": log_info["error_lines"],
             "example_records": _extract_records_sample(result_payload),
             "progress_history": _extract_progress_history(log_info),
+            "backbone": backbone_tag,
         }
         sessions.append(session)
         by_dataset[dataset].append(session)
+
+    if not is_primary:
+        return
+    for ablation_json in sorted(ablation_results_dir.rglob("*.json")):
+        payload = _load_json(ablation_json)
+        if not payload:
+            continue
+        meta = payload.get("meta", {}) if isinstance(payload, dict) else {}
+        ablation_tag = meta.get("ablation", "")
+        if not ablation_tag:
+            continue
+        stem = ablation_json.stem
+        session_key = f"ablation_{ablation_tag}_{stem}"
+        if session_key in known_log_keys:
+            continue
+        dataset, architecture = _split_dataset_arch(session_key)
+        result = payload.get("result", {}) if isinstance(payload, dict) else {}
+        summary = result.get("summary", {}) or {} if isinstance(result, dict) else {}
+        success_count = int(result.get("count", 0) or 0)
+        failed_count = int(result.get("failed_count", 0) or 0)
+        record_count = int(result.get("processed_count", success_count + failed_count) or 0)
+        status = "finished" if record_count > 0 else "running"
+        progress = _normalize_progress(None, status=status, record_count=record_count)
+        progress_ratio = _safe_float(progress.get("pct", 0.0), 0.0) / 100.0 if progress else 0.0
+        score = _score(summary) if summary else 0.0
+        session = {
+            "session_key": session_key,
+            "dataset": dataset,
+            "architecture": architecture,
+            "status": status,
+            "started_at": meta.get("started_at"),
+            "ended_at": meta.get("ended_at"),
+            "records": record_count,
+            "success_records": success_count,
+            "failed_records": failed_count,
+            "summary": summary,
+            "metric_tiles": _metric_tiles(summary),
+            "status_reason": "complete" if status == "finished" else "running",
+            "score": round(score, 4),
+            "result_file": str(ablation_json),
+            "log_file": "",
+            "meta": meta,
+            "models": {
+                "text": meta.get("text_model"),
+                "vision": meta.get("vision_model"),
+            },
+            "thinking_budget": _extract_thinking_budget(meta),
+            "duration_s": round(_safe_float(meta.get("duration_s"), 0.0), 3) if meta.get("duration_s") is not None else None,
+            "supervision_profile": meta.get("dataset_profile") if isinstance(meta.get("dataset_profile"), dict) else None,
+            "result_fresh": True,
+            "progress": progress,
+            "progress_ratio": round(progress_ratio, 4),
+            "metric_digest": None,
+            "log_tail": [],
+            "log_timeline": [],
+            "log_line_count": 0,
+            "log_errors": [],
+            "example_records": _extract_records_sample(payload),
+            "progress_history": None,
+            "backbone": backbone_tag,
+        }
+        sessions.append(session)
+        by_dataset[dataset].append(session)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Build dashboard JSON from experiment logs and result artifacts.")
+    parser.add_argument("--results-dir", default="artifacts/experiments/results")
+    parser.add_argument("--ablation-results-dir", default="artifacts/ablations")
+    parser.add_argument("--logs-dir", default="logs/experiments/sessions")
+    parser.add_argument("--primary-tag", default="qwen4b")
+    parser.add_argument("--extra-logs-dir", default=None)
+    parser.add_argument("--extra-results-dir", default=None)
+    parser.add_argument("--extra-tag", default="qwen27b")
+    parser.add_argument("--out", default="web/data/session_summary.json")
+    args = parser.parse_args()
+
+    results_dir = Path(args.results_dir)
+    ablation_results_dir = Path(args.ablation_results_dir)
+    logs_dir = Path(args.logs_dir)
+    if not results_dir.exists() and Path("artifacts/experiments").exists():
+        results_dir = Path("artifacts/experiments")
+    if not ablation_results_dir.exists():
+        ablation_results_dir = Path("artifacts/ablations")
+    if not logs_dir.exists() and Path("logs/experiments").exists():
+        logs_dir = Path("logs/experiments")
+    out_path = Path(args.out)
+
+    sessions: list[dict[str, Any]] = []
+    by_dataset: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    known_log_keys: set[str] = set()
+
+    _scan_track(
+        logs_dir=logs_dir,
+        results_dir=results_dir,
+        ablation_results_dir=ablation_results_dir,
+        backbone_tag=args.primary_tag,
+        is_primary=True,
+        sessions=sessions,
+        by_dataset=by_dataset,
+        known_log_keys=known_log_keys,
+    )
+    if args.extra_logs_dir:
+        _scan_track(
+            logs_dir=Path(args.extra_logs_dir),
+            results_dir=Path(args.extra_results_dir) if args.extra_results_dir else results_dir,
+            ablation_results_dir=ablation_results_dir,
+            backbone_tag=args.extra_tag,
+            is_primary=False,
+            sessions=sessions,
+            by_dataset=by_dataset,
+            known_log_keys=known_log_keys,
+        )
+
+    _append_agentic_rag_sessions(root_dir=Path("."), sessions=sessions, by_dataset=by_dataset)
 
     dataset_cards: list[dict[str, Any]] = []
     for dataset, rows in sorted(by_dataset.items()):
