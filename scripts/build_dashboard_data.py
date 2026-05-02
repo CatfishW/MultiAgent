@@ -49,6 +49,33 @@ AGENTIC_RAG_RUNS = [
     },
 ]
 
+TOOLCALL_CACHE_RUNS = [
+    {
+        "tag": "marlet_cache_4b_tutoreval",
+        "dataset": "TutorEval",
+        "result_file": "artifacts/experiments_toolcall_50_cache/results/tutoreval_hybrid_fast_4b_tool_cache.json",
+        "backbone": "qwen4b",
+    },
+    {
+        "tag": "marlet_cache_4b_edubench",
+        "dataset": "EduBench",
+        "result_file": "artifacts/experiments_toolcall_50_cache/results/edubench_hybrid_fast_4b_tool_cache.json",
+        "backbone": "qwen4b",
+    },
+    {
+        "tag": "marlet_cache_27b_tutoreval",
+        "dataset": "TutorEval",
+        "result_file": "artifacts/experiments_toolcall_50_cache/results/tutoreval_hybrid_fast_27b_tool_cache.json",
+        "backbone": "qwen27b",
+    },
+    {
+        "tag": "marlet_cache_27b_edubench",
+        "dataset": "EduBench",
+        "result_file": "artifacts/experiments_toolcall_50_cache/results/edubench_hybrid_fast_27b_tool_cache.json",
+        "backbone": "qwen27b",
+    },
+]
+
 
 def _load_json(path: Path) -> dict[str, Any] | None:
     if not path.exists():
@@ -297,6 +324,7 @@ def _metric_tiles(summary: dict[str, Any]) -> dict[str, float]:
         "edu_score_alignment",
         "latency_ms",
         "api_time_ms",
+        "model_cache_hits",
         "agent_count",
         "llm_call_count",
         "total_tokens",
@@ -592,6 +620,105 @@ def _append_agentic_rag_sessions(
             "score": round(score, 4),
             "result_file": str(result_file),
             "log_file": str(log_file),
+            "meta": meta,
+            "models": {
+                "text": meta.get("text_model") or model_from_spec,
+                "vision": meta.get("vision_model") or model_from_spec,
+            },
+            "thinking_budget": _extract_thinking_budget(meta) or 512,
+            "duration_s": round(_safe_float(meta.get("duration_s"), 0.0), 3) if meta.get("duration_s") is not None else None,
+            "supervision_profile": meta.get("dataset_profile") if isinstance(meta.get("dataset_profile"), dict) else None,
+            "result_fresh": result_file.exists() and (not lines or result_file.stat().st_mtime >= log_mtime - 1.0),
+            "progress": progress,
+            "progress_ratio": round(progress_ratio, 4),
+            "metric_digest": None,
+            "log_tail": lines[-12:],
+            "log_timeline": [
+                line
+                for line in lines
+                if any(marker in line for marker in ["START", "Selected text model", "Running evaluation", "Progress", "DONE"])
+            ][-12:],
+            "log_line_count": len(lines),
+            "log_errors": [line for line in lines if "Traceback" in line or "ERROR" in line or "Exception" in line][-6:],
+            "example_records": _extract_records_sample(result_payload),
+            "progress_history": _progress_history_from_lines(lines),
+            "backbone": spec["backbone"],
+        }
+        sessions.append(session)
+        by_dataset[spec["dataset"]].append(session)
+
+
+def _append_toolcall_cache_sessions(
+    *,
+    root_dir: Path,
+    sessions: list[dict[str, Any]],
+    by_dataset: dict[str, list[dict[str, Any]]],
+) -> None:
+    log_dir = root_dir / "logs/experiments/toolcall_50_cache"
+    driver_log = log_dir / "driver.log"
+    segments = _combined_log_segments(driver_log)
+    latest_log_mtime = driver_log.stat().st_mtime if driver_log.exists() else 0.0
+    for spec in TOOLCALL_CACHE_RUNS:
+        tag = spec["tag"]
+        segment = segments.get(tag, {})
+        result_file = root_dir / spec["result_file"]
+        result_payload = _load_json(result_file)
+        result = result_payload.get("result", {}) if isinstance(result_payload, dict) else {}
+        meta = result_payload.get("meta", {}) if isinstance(result_payload, dict) else {}
+        summary = result.get("summary", {}) or {} if isinstance(result, dict) else {}
+        success_count = int(result.get("count", 0) or 0) if isinstance(result, dict) else 0
+        failed_count = int(result.get("failed_count", 0) or 0) if isinstance(result, dict) else 0
+        record_count = int(result.get("processed_count", success_count + failed_count) or 0) if isinstance(result, dict) else 0
+        total_examples = int(result.get("total_examples", 50) or 50) if isinstance(result, dict) else 50
+
+        lines = list(segment.get("lines") or [])
+        run_log = log_dir / f"{tag}.log"
+        if run_log.exists():
+            run_lines = run_log.read_text(encoding="utf-8", errors="ignore").splitlines()
+            lines = [*lines, *run_lines]
+            latest_log_mtime = max(latest_log_mtime, run_log.stat().st_mtime)
+        latest_progress = None
+        for line in reversed(lines):
+            if match := PROGRESS_RE.search(line):
+                latest_progress = {
+                    "completed": int(match.group("completed")),
+                    "total": int(match.group("total")),
+                    "pct": _parse_pct_text(match.group("pct")),
+                    "pct_text": match.group("pct"),
+                    "metrics": _parse_progress_metrics(line),
+                    "line": line,
+                }
+                break
+        if latest_progress and isinstance(latest_progress.get("metrics"), dict):
+            summary = {**summary, **latest_progress["metrics"]}
+            record_count = max(record_count, int(latest_progress.get("completed") or 0))
+        done = bool(segment.get("done"))
+        complete_by_result = total_examples > 0 and success_count + failed_count >= total_examples
+        status = "finished" if done or complete_by_result else "running" if lines or record_count else "queued"
+        progress = _normalize_progress(latest_progress, status=status, record_count=record_count)
+        if progress is None:
+            pct = (100.0 * record_count / total_examples) if total_examples else 0.0
+            progress = {"completed": record_count, "total": total_examples, "pct": round(pct, 2), "pct_text": f"{pct:.1f}%"}
+        progress_ratio = _safe_float(progress.get("pct"), 0.0) / 100.0 if progress else 0.0
+        model_from_spec = "Qwen3.5-27B-FP8" if spec["backbone"] == "qwen27b" else "Qwen3.5-4B"
+        score = _score(summary) if summary else 0.0
+        log_mtime = max(latest_log_mtime, run_log.stat().st_mtime if run_log.exists() else 0.0)
+        session = {
+            "session_key": f"{spec['backbone']}__{spec['dataset'].lower()}_marlet_tool_cache_50",
+            "dataset": spec["dataset"],
+            "architecture": "hybrid_fast_tool_cache",
+            "status": status,
+            "started_at": segment.get("started_at") or meta.get("started_at"),
+            "ended_at": meta.get("ended_at") or segment.get("ended_at"),
+            "records": record_count,
+            "success_records": success_count,
+            "failed_records": failed_count,
+            "summary": summary,
+            "metric_tiles": _metric_tiles(summary),
+            "status_reason": "complete" if status == "finished" else "cache-aware tool-call MARLET run",
+            "score": round(score, 4),
+            "result_file": str(result_file),
+            "log_file": str(run_log if run_log.exists() else driver_log),
             "meta": meta,
             "models": {
                 "text": meta.get("text_model") or model_from_spec,
@@ -943,6 +1070,7 @@ def main() -> None:
         )
 
     _append_agentic_rag_sessions(root_dir=Path("."), sessions=sessions, by_dataset=by_dataset)
+    _append_toolcall_cache_sessions(root_dir=Path("."), sessions=sessions, by_dataset=by_dataset)
 
     dataset_cards: list[dict[str, Any]] = []
     for dataset, rows in sorted(by_dataset.items()):
