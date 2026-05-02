@@ -84,6 +84,7 @@ class PipelineConfig:
     use_fast_rule_planner: bool = False
     parallel_specialists: bool = True
     cache_dir: str = ".cache/eduagentic/models"
+    enable_model_cache: bool = True
     # Ablation knobs. All default False => current production behavior.
     # Reviewer-critical ablations (see docs/EXPERIMENTS.md).
     hybrid_force_retrieval: bool = False

@@ -8,6 +8,7 @@ pipeline:
   enable_tool_calls: true
   use_fast_rule_planner: true
   parallel_specialists: true
+  enable_model_cache: true
 retriever:
   chunk_size: 220
   chunk_overlap: 40

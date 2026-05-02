@@ -54,7 +54,7 @@ class ModelRegistry:
             api_key=endpoint.api_key,
             timeout_s=endpoint.timeout_s,
             request_retries=max(1, int(endpoint.max_retries)),
-            cache_dir=str(Path(self.config.pipeline.cache_dir) / endpoint.name),
+            cache_dir=str(Path(self.config.pipeline.cache_dir) / endpoint.name) if self.config.pipeline.enable_model_cache else None,
         )
 
     async def refresh(self, force: bool = False) -> dict[str, list[ModelDescriptor]]:
