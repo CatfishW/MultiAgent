@@ -16,20 +16,20 @@ class TutorAgent(BaseAgent):
 
     def _render_user_prompt(self, context: AgentContext) -> str:
         example = context.example
-        parts = [f"Dataset: {example.dataset_name}", f"Question:\n{example.question}"]
+        parts = [f"Domain or dataset: {example.dataset_name}", f"Question or task:\n{example.question}"]
         if example.choices:
             parts.append("Choices:\n" + "\n".join(f"- {choice}" for choice in example.choices))
         if example.dialogue_history:
             history = "\n".join(f"{turn.role}: {turn.text}" for turn in example.dialogue_history[-8:])
-            parts.append(f"Recent dialogue:\n{history}")
+            parts.append(f"Recent interaction:\n{history}")
         if context.student_state is not None:
-            parts.append(f"Student profile:\n{context.student_state.summary}")
+            parts.append(f"Visible user/task state:\n{context.student_state.summary}")
             if context.student_state.misconceptions:
-                parts.append("Possible misconceptions:\n" + "\n".join(f"- {item}" for item in context.student_state.misconceptions[:3]))
+                parts.append("Visible confusion or prior-attempt notes:\n" + "\n".join(f"- {item}" for item in context.student_state.misconceptions[:3]))
         if context.plan_text:
             parts.append(f"Operating plan:\n{context.plan_text}")
         if context.rubric_summary:
-            parts.append(f"Rubric:\n{context.rubric_summary}")
+            parts.append(f"Answer criteria:\n{context.rubric_summary}")
         if context.retrieved_chunks:
             evidence = "\n\n".join(
                 f"[{chunk.doc_id}] {chunk.title}\n{chunk.text}" for chunk in context.retrieved_chunks
@@ -39,7 +39,7 @@ class TutorAgent(BaseAgent):
             parts.append(f"Inline context:\n{context.example.context_text}")
         parts.append(
             "Answer requirements:\n"
-            "- be correct and pedagogically useful\n"
+            "- be correct and useful for the user's visible task state\n"
             "- be concise but not terse\n"
             "- include one clear next step or check-for-understanding when appropriate\n"
             "- when evidence is provided, cite with [doc_id]"

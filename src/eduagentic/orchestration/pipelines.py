@@ -68,6 +68,15 @@ class BasePipeline:
             flags["ablation.tag_present"] = 1.0
         return flags
 
+    async def _run_role_tasks(self, tasks: dict[str, Any]) -> dict[str, AgentResult]:
+        if self.config.pipeline.enable_swarm_runtime and len(tasks) > 1:
+            swarm = SwarmRuntimeAdapter()
+            try:
+                return await swarm.run_parallel_roles(tasks)
+            finally:
+                swarm.close()
+        return await self.runtime.run_parallel(tasks)
+
     def _safe_float(self, value: Any, default: float = 0.0) -> float:
         try:
             return float(value)
@@ -187,7 +196,7 @@ class ClassicalRAGPipeline(BasePipeline):
     """Paper: "Classical RAG" retrieval mechanism (baseline).
 
     Retrieval is the top-level controller: the retriever runs on every
-    example using the raw student query, then the tutor (and optional critic)
+    example using the raw standardized query, then the generator (and optional critic)
     generates from the top-k chunks. No planner, diagnoser, or rubric agent
     runs before retrieval. This is the retrieve-then-read pipeline against
     which every other mechanism in the paper is compared.
@@ -236,15 +245,9 @@ class AgenticRAGPipeline(BasePipeline):
             tasks["diagnoser"] = lambda: self.diagnoser.run(base_context)
         if route.use_rubric_agent:
             tasks["rubric"] = lambda: self.rubric.run(base_context)
-        if self.config.pipeline.enable_swarm_runtime and len(tasks) > 1:
-            swarm = SwarmRuntimeAdapter()
-            try:
-                initial = await swarm.run_parallel_roles(tasks)
-            finally:
-                swarm.close()
-        else:
-            initial = await self.runtime.run_parallel(tasks)
-        student_state = initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts.get("student_state")
+        initial = await self._run_role_tasks(tasks)
+        state_artifacts = initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts
+        student_state = state_artifacts.get("task_state", state_artifacts.get("student_state"))
         search_queries = initial.get("planner", AgentResult(role="planner", text="", artifacts={})).artifacts.get("queries", [example.question])
         rubric_summary = initial.get("rubric").text if "rubric" in initial else None
         context = replace(
@@ -287,7 +290,7 @@ class MultiAgentNoRAGPipeline(BasePipeline):
 
     The retriever is removed. The planner, diagnoser, and rubric agents run
     in parallel on the raw prompt, build the shared AgentContext, and the
-    tutor (plus optional critic) generates from those summaries alone. This
+    generator (plus optional critic) produces from those summaries alone. This
     pipeline isolates how much of classical RAG's behavior can be reproduced
     without ever consulting the corpus.
 
@@ -309,10 +312,11 @@ class MultiAgentNoRAGPipeline(BasePipeline):
             tasks["diagnoser"] = lambda: self.diagnoser.run(base_context)
         if route.use_rubric_agent:
             tasks["rubric"] = lambda: self.rubric.run(base_context)
-        initial = await self.runtime.run_parallel(tasks)
+        initial = await self._run_role_tasks(tasks)
+        state_artifacts = initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts
         context = replace(
             base_context,
-            student_state=initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts.get("student_state"),
+            student_state=state_artifacts.get("task_state", state_artifacts.get("student_state")),
             plan_text=initial.get("planner").text if "planner" in initial else None,
             search_queries=initial.get("planner", AgentResult(role="planner", text="", artifacts={})).artifacts.get("queries", [example.question]),
             rubric_summary=initial.get("rubric").text if "rubric" in initial else None,
@@ -349,7 +353,7 @@ class MultiAgentNoRAGPipeline(BasePipeline):
 class SingleAgentNoRAGPipeline(BasePipeline):
     """Paper: "Single-Agent (no retrieval)" ablation floor.
 
-    Only the tutor (plus optional critic) runs. No coordination, no
+    Only the generator (plus optional critic) runs. No coordination, no
     retrieval. This is the floor we report to rule out the hypothesis that
     the backbone alone is strong enough to solve the benchmarks and to
     quantify how much the coordination stack contributes in the absence
@@ -385,14 +389,14 @@ class HybridFastPipeline(BasePipeline):
 
     Unlike classical RAG, the retriever is not the top-level controller.
     The coordination agents (planner, diagnoser, rubric) run in parallel
-    first to build a plan, a student-state summary, and a rubric checklist.
+    first to build a plan, a visible task-state summary, and a criteria checklist.
     Their outputs populate the shared AgentContext, and a lightweight
     router gate decides per example whether to call the retriever:
 
         require_retrieval(x) = 1[s_e(x) >= tau_e  OR  regime(x) == EG]
 
     If the gate fires, the retriever runs with the planner's scoped queries
-    rather than the raw prompt. After the tutor produces a draft, a single
+    rather than the raw prompt. After the generator produces a draft, a single
     fallback retrieval pass is triggered when the draft has no grounding
     but the router's evidence score is above ``hybrid_retrieval_fallback``
     (default 0.45). The critic then revises against the rubric and any
@@ -415,10 +419,11 @@ class HybridFastPipeline(BasePipeline):
             tasks["diagnoser"] = lambda: self.diagnoser.run(base_context)
         if route.use_rubric_agent:
             tasks["rubric"] = lambda: self.rubric.run(base_context)
-        initial = await self.runtime.run_parallel(tasks)
+        initial = await self._run_role_tasks(tasks)
+        state_artifacts = initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts
         context = replace(
             base_context,
-            student_state=initial.get("diagnoser", AgentResult(role="diagnoser", text="", artifacts={})).artifacts.get("student_state"),
+            student_state=state_artifacts.get("task_state", state_artifacts.get("student_state")),
             plan_text=initial.get("planner").text if "planner" in initial else None,
             search_queries=initial.get("planner", AgentResult(role="planner", text="", artifacts={})).artifacts.get("queries", [example.question]),
             rubric_summary=initial.get("rubric").text if "rubric" in initial else None,

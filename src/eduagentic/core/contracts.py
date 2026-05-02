@@ -10,6 +10,10 @@ class TaskRegime(str, Enum):
     RUBRIC_FEEDBACK = "rubric_based_feedback"
     ADAPTIVE_TUTORING = "adaptive_tutoring"
     LESSON_PLANNING = "lesson_exercise_planning"
+    # Generic aliases. The legacy values are kept so previous experiment
+    # artifacts and dataset adapters remain readable.
+    ADAPTIVE_RESPONSE = "adaptive_tutoring"
+    TASK_PLANNING = "lesson_exercise_planning"
 
 
 class ArchitectureFamily(str, Enum):
@@ -99,6 +103,10 @@ class StudentState:
     strengths: list[str] = field(default_factory=list)
     preferred_style: str | None = None
     summary: str = ""
+
+
+# Generic alias for domain deployments outside education.
+TaskState = StudentState
 
 
 @dataclass(slots=True)

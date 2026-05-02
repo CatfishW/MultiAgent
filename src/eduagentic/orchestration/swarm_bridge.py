@@ -20,9 +20,9 @@ class SwarmRuntimeAdapter:
     reviewer or ablation requires it.
     """
 
-    def __init__(self, *, team_name: str = "edu-swarm", session_id: str = "edu-session", cwd: str = ".") -> None:
+    def __init__(self, *, team_name: str = "marlet-swarm", session_id: str = "marlet-session", cwd: str = ".") -> None:
         self.store = AppStateStore(AppState(current_cwd=cwd))
-        state, _ = create_team(self.store.get_state(), team_name=team_name, session_id=session_id, cwd=cwd, description="Educational benchmark swarm")
+        state, _ = create_team(self.store.get_state(), team_name=team_name, session_id=session_id, cwd=cwd, description="MARLET specialist-agent swarm")
         self.store.set_state(lambda _prev: state)
 
     async def run_parallel_roles(
@@ -50,11 +50,11 @@ class SwarmRuntimeAdapter:
                 start_inprocess_backend(
                     store=self.store,
                     name=role_name,
-                    team_name=self.store.get_state().team_context.team_name if self.store.get_state().team_context else "edu-swarm",
+                    team_name=self.store.get_state().team_context.team_name if self.store.get_state().team_context else "marlet-swarm",
                     prompt=f"run-role:{role_name}",
-                    parent_session_id="edu-session",
+                    parent_session_id="marlet-session",
                     executor=executor,
-                    task_list_id="edu-session",
+                    task_list_id="marlet-session",
                 )
             )
         await asyncio.gather(*(handle.asyncio_task for handle in handles))

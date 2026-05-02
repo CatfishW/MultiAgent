@@ -6,6 +6,8 @@ from .retriever import RetrieverAgent
 from .rubric import RubricAgent
 from .tutor import TutorAgent
 
+GeneratorAgent = TutorAgent
+
 __all__ = [
     "AgentContext",
     "AgentDependencies",
@@ -16,4 +18,5 @@ __all__ = [
     "RetrieverAgent",
     "RubricAgent",
     "TutorAgent",
+    "GeneratorAgent",
 ]

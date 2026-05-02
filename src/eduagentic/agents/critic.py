@@ -26,17 +26,18 @@ class CriticAgent(BaseAgent):
     async def run(self, context: AgentContext) -> AgentResult:
         issues = self._issues(context)
         confidence = max(0.15, 0.92 - 0.18 * len(issues))
-        if not issues or self.deps.text_client is None or self.deps.text_model is None:
+        if self.deps.text_client is None or self.deps.text_model is None:
             return AgentResult(
                 role=self.role_name,
                 text=context.draft_answer or "",
                 confidence=confidence,
-                artifacts={"issues": issues},
+                artifacts={"issues": issues, "mode": "heuristic_fallback"},
             )
+        issue_block = "\n".join(f"- {item}" for item in issues) if issues else "- no deterministic issue found; verify briefly and preserve the answer if it is already correct"
         user_prompt = (
             f"Draft answer:\n{context.draft_answer}\n\n"
-            f"Issues to fix:\n" + "\n".join(f"- {item}" for item in issues) + "\n\n"
-            "Revise the answer to fix the issues while preserving correctness."
+            f"Issues or checks:\n{issue_block}\n\n"
+            "Return the final answer only. If the draft is already correct, return it unchanged."
         )
         response = await self.deps.text_client.chat(
             model=self.deps.text_model,
@@ -52,6 +53,6 @@ class CriticAgent(BaseAgent):
             role=self.role_name,
             text=response.text.strip(),
             confidence=confidence,
-            artifacts={"issues": issues, "usage": response.usage, "raw": response.raw},
+            artifacts={"issues": issues, "usage": response.usage, "raw": response.raw, "mode": "llm"},
             latency_ms=response.latency_ms,
         )

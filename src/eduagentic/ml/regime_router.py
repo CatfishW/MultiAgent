@@ -28,6 +28,14 @@ EVIDENCE_CUES = [
     "verification",
 ]
 COORDINATION_CUES = [
+    "user",
+    "profile",
+    "state",
+    "context",
+    "criteria",
+    "constraint",
+    "workflow",
+    "dependency",
     "rubric",
     "feedback",
     "student",
@@ -42,8 +50,35 @@ COORDINATION_CUES = [
     "pedagog",
 ]
 RUBRIC_CUES = ["rubric", "criterion", "criteria", "score", "feedback", "comment"]
-PLANNING_CUES = ["lesson", "plan", "sequence", "curriculum", "study schedule", "exercise plan"]
-TUTORING_CUES = ["student", "hint", "misconception", "explain", "teach", "tutor", "confused"]
+PLANNING_CUES = [
+    "plan",
+    "sequence",
+    "schedule",
+    "workflow",
+    "roadmap",
+    "steps",
+    "next steps",
+    "lesson",
+    "curriculum",
+    "study schedule",
+    "exercise plan",
+]
+ADAPTATION_CUES = [
+    "user",
+    "profile",
+    "beginner",
+    "expert",
+    "personalize",
+    "adapt",
+    "confused",
+    "attempted",
+    "hint",
+    "misconception",
+    "student",
+    "explain",
+    "teach",
+    "tutor",
+]
 
 DATASET_PRIORS: dict[str, tuple[TaskRegime, ArchitectureFamily]] = {
     "hotpotqa": (TaskRegime.EVIDENCE_GROUNDED, ArchitectureFamily.AGENTIC_RAG),
@@ -114,14 +149,14 @@ class LightweightRegimeRouter:
         coordination = keyword_score(blob, COORDINATION_CUES)
         rubric = keyword_score(blob, RUBRIC_CUES) + (0.2 if example.rubric else 0.0)
         planning = keyword_score(blob, PLANNING_CUES)
-        tutoring = keyword_score(blob, TUTORING_CUES) + min(len(example.dialogue_history) / 6.0, 0.5)
+        adaptation = keyword_score(blob, ADAPTATION_CUES) + min(len(example.dialogue_history) / 6.0, 0.5)
         if example.context_text:
             evidence += 0.08
         if example.images:
             evidence += 0.05
             coordination += 0.03
         dataset_key = example.dataset_name.lower()
-        if dataset_key in DATASET_PRIORS:
+        if getattr(self.config.router, "use_dataset_priors", False) and dataset_key in DATASET_PRIORS:
             prior_regime, _ = DATASET_PRIORS[dataset_key]
             if prior_regime == TaskRegime.EVIDENCE_GROUNDED:
                 evidence += 0.15
@@ -130,7 +165,7 @@ class LightweightRegimeRouter:
                 rubric += 0.15
             elif prior_regime == TaskRegime.ADAPTIVE_TUTORING:
                 coordination += 0.15
-                tutoring += 0.15
+                adaptation += 0.15
             else:
                 coordination += 0.12
                 planning += 0.18
@@ -139,7 +174,8 @@ class LightweightRegimeRouter:
             "coordination": min(1.0, coordination),
             "rubric": min(1.0, rubric),
             "planning": min(1.0, planning),
-            "tutoring": min(1.0, tutoring),
+            "adaptation": min(1.0, adaptation),
+            "tutoring": min(1.0, adaptation),
         }
 
     def decide(self, example: BenchmarkExample) -> RouteDecision:
@@ -157,7 +193,7 @@ class LightweightRegimeRouter:
             vector = self.trained.vectorizer.transform([self._text_blob(example)])
             prediction = self.trained.model.predict(vector)[0]
             predicted_family = ArchitectureFamily(prediction)
-        elif dataset_key in DATASET_PRIORS and not use_heuristic_only:
+        elif getattr(router_cfg, "use_dataset_priors", False) and dataset_key in DATASET_PRIORS and not use_heuristic_only:
             _, predicted_family = DATASET_PRIORS[dataset_key]
         else:
             if scores["evidence"] >= router_cfg.evidence_threshold and scores["coordination"] < 0.35:
@@ -171,11 +207,11 @@ class LightweightRegimeRouter:
 
         if example.regime_hint is not None:
             regime = example.regime_hint
-        elif scores["planning"] >= max(scores["rubric"], scores["tutoring"], 0.42):
+        elif scores["planning"] >= max(scores["rubric"], scores["adaptation"], 0.42):
             regime = TaskRegime.LESSON_PLANNING
-        elif scores["rubric"] >= max(scores["tutoring"], 0.35):
+        elif scores["rubric"] >= max(scores["adaptation"], 0.35):
             regime = TaskRegime.RUBRIC_FEEDBACK
-        elif scores["tutoring"] >= 0.35:
+        elif scores["adaptation"] >= 0.35:
             regime = TaskRegime.ADAPTIVE_TUTORING
         else:
             regime = TaskRegime.EVIDENCE_GROUNDED

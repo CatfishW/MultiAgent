@@ -39,11 +39,11 @@ class StudentStateTracker:
 
         goals = []
         if "learn" in lowered or "understand" in lowered:
-            goals.append("understand concept")
+            goals.append("understand current task")
         if "solve" in lowered or "answer" in lowered:
             goals.append("solve current problem")
         if "plan" in lowered or "schedule" in lowered:
-            goals.append("build study plan")
+            goals.append("build action plan")
 
         confusion = any(cue in lowered for cue in CONFUSION_CUES)
         summary_parts = [f"level={level}"]
@@ -77,3 +77,8 @@ class StudentStateTracker:
         if assistant_text and len(assistant_text.split()) > 180 and state.preferred_style == "concise":
             state.preferred_style = "concise"
         return state
+
+
+# Generic alias for non-educational deployments. The original class name stays
+# available so existing datasets and experiment artifacts remain compatible.
+TaskStateTracker = StudentStateTracker
